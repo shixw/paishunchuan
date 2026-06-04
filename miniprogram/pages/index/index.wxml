@@ -1,0 +1,21 @@
+<view class="container">
+  <view class="status-bar">
+    <text class="status {{healthStatus}}">
+      {{healthStatus === 'online' ? '● 服务已连接' : (healthStatus === 'offline' ? '○ 服务断开' : '◐ 检测中...')}}
+    </text>
+    <button class="reconfig-btn" bindtap="goToConnect" size="mini">切换服务</button>
+  </view>
+  <view class="camera-wrapper">
+    <camera id="camera" device-position="back" flash="off" style="width: 100%; height: 100%;"></camera>
+  </view>
+  <!-- 新增标签输入区域 -->
+  <view class="tag-area">
+    <text class="tag-label">🏷️ 标签</text>
+    <input class="tag-input" placeholder="例如：会议记录、产品照片" value="{{tag}}" bindinput="onTagChange" maxlength="20" />
+  </view>
+  <view class="footer">
+    <button class="shoot-btn" bindtap="takePhoto" disabled="{{healthStatus !== 'online'}}">
+      {{healthStatus === 'online' ? '📸 拍照并上传' : '⏳ 等待连接'}}
+    </button>
+  </view>
+</view>

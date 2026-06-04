@@ -1,0 +1,95 @@
+.container {
+  padding: 80rpx 40rpx;
+  background: #f5f7fb;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-area {
+  text-align: center;
+  margin-bottom: 80rpx;
+}
+.logo {
+  width: 160rpx;
+  height: 160rpx;
+  margin-bottom: 30rpx;
+}
+.title {
+  font-size: 48rpx;
+  font-weight: 600;
+  color: #1e293b;
+  display: block;
+}
+.subtitle {
+  font-size: 28rpx;
+  color: #64748b;
+  margin-top: 16rpx;
+}
+
+.form {
+  width: 100%;
+  max-width: 600rpx;
+}
+.input-group {
+  background: white;
+  border-radius: 24rpx;
+  padding: 24rpx;
+  margin-bottom: 40rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
+}
+.label {
+  font-size: 28rpx;
+  color: #334155;
+  display: block;
+  margin-bottom: 16rpx;
+}
+.input {
+  width: 100%;
+  font-size: 30rpx;
+  border-bottom: 2rpx solid #e2e8f0;
+  padding: 16rpx 0;
+}
+
+.button-group {
+  margin-bottom: 40rpx;
+}
+.btn {
+  border-radius: 60rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  padding: 24rpx 0;
+  margin-bottom: 24rpx;
+}
+.btn.primary {
+  background: #3b82f6;
+  color: white;
+}
+.btn.secondary {
+  background: white;
+  color: #3b82f6;
+  border: 2rpx solid #3b82f6;
+}
+.result {
+  text-align: center;
+  font-size: 28rpx;
+  padding: 16rpx;
+  border-radius: 40rpx;
+}
+.result.success {
+  background: #dcfce7;
+  color: #15803d;
+}
+.result.error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.wifi-warning {
+  text-align: center;
+  background: #ffedd5;
+  color: #c2410c;
+  padding: 20rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+}

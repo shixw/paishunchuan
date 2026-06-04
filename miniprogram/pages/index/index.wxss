@@ -1,0 +1,110 @@
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #000;
+}
+
+.camera-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: #000;
+}
+
+.footer {
+  background-color: #fff;
+  padding: 20rpx 30rpx;
+  border-top-left-radius: 30rpx;
+  border-top-right-radius: 30rpx;
+  box-shadow: 0 -4rpx 12rpx rgba(0,0,0,0.05);
+}
+
+.shoot-btn {
+  background: #3b82f6;
+  color: white;
+  border-radius: 60rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  padding: 24rpx 0;
+  margin-bottom: 20rpx;
+}
+
+.server-info {
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+  color: #333;
+  background: #f8fafc;
+  padding: 16rpx 20rpx;
+  border-radius: 48rpx;
+}
+
+.server-info .label {
+  width: 160rpx;
+  color: #64748b;
+}
+
+.server-info input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: monospace;
+}
+
+
+.status-bar {
+  background: #fff;
+  padding: 20rpx 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1rpx solid #e9eef3;
+}
+.status {
+  font-size: 28rpx;
+}
+.status.online {
+  color: #10b981;
+}
+.status.offline {
+  color: #ef4444;
+}
+.status.checking {
+  color: #f59e0b;
+}
+.reconfig-btn {
+  background: #f1f5f9;
+  color: #3b82f6;
+  border: none;
+  font-size: 24rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 40rpx;
+  margin: 0;
+}
+.shoot-btn[disabled] {
+  background: #cbd5e1;
+  color: #64748b;
+}
+
+.tag-area {
+  background: white;
+  padding: 20rpx 30rpx;
+  display: flex;
+  align-items: center;
+  border-bottom: 1rpx solid #e9eef3;
+}
+.tag-label {
+  font-size: 28rpx;
+  color: #1e293b;
+  font-weight: 500;
+  width: 100rpx;
+}
+.tag-input {
+  flex: 1;
+  background: #f8fafc;
+  border-radius: 40rpx;
+  padding: 16rpx 24rpx;
+  font-size: 28rpx;
+  border: none;
+}

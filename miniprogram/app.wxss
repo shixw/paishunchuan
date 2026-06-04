@@ -1,0 +1,12 @@
+/**app.wxss**/
+page {
+  background-color: #f5f7fb;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 0;
+}

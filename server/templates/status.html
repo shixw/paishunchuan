@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拍瞬传 · 服务端</title>
+    <meta http-equiv="refresh" content="{{.Refresh}}">
+    <script src="/static/qrcode.min.js"></script>
+    <style>
+        /* 样式同前，略作调整 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f7fb;
+            padding: 20px;
+            color: #1e293b;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-left: 5px solid #3b82f6;
+            padding-left: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .qr-area {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .qr-box {
+            background: white;
+            padding: 12px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .qr-tip {
+            font-size: 0.9rem;
+            color: #475569;
+        }
+        .client-list { margin-top: 16px; }
+        .client-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+        }
+        .client-ip { font-family: monospace; font-weight: 500; }
+        .client-time { color: #64748b; }
+        .empty-clients { color: #94a3b8; padding: 20px 0; text-align: center; }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .image-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e9eef3;
+        }
+        .image-card img {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            display: block;
+        }
+        .image-info {
+            padding: 8px;
+            font-size: 0.7rem;
+            color: #475569;
+            text-align: center;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #94a3b8;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px 0;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .group-title {
+            font-size: 1.3rem;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+            display: inline-block;
+        }
+        @media (max-width: 640px) {
+            .qr-area { flex-direction: column; align-items: flex-start; }
+            .image-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📸 拍瞬传 · 服务端</h1>
+
+    <div class="card">
+        <div class="qr-area">
+            <div class="qr-box" id="qrcode"></div>
+            <div class="qr-tip">
+                <strong>📱 微信扫码连接</strong><br>
+                打开「拍瞬传」小程序 → 扫码连接
+                <div style="margin-top: 12px;">
+                    <button id="openDirBtn" style="background: #f1f5f9; border: none; border-radius: 40px; padding: 6px 16px; font-size: 0.8rem; cursor: pointer;">📂 打开图片目录</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 style="font-size: 1.3rem; margin-bottom: 8px;">🔗 连接的客户端</h2>
+        <div class="client-list">
+            {{if .Clients}}
+                {{range .Clients}}
+                <div class="client-item">
+                    <span class="client-ip">{{.IP}}</span>
+                    <span class="client-time">{{.LastActive.Format "15:04:05"}}</span>
+                </div>
+                {{end}}
+            {{else}}
+                <div class="empty-clients">暂无客户端连接</div>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- 按标签分组展示图片 -->
+    {{if .Groups}}
+        {{range .Groups}}
+        <div class="card">
+            <h2 class="group-title">🏷️ {{.Tag}}</h2>
+            <div class="image-grid">
+                {{range .Images}}
+                <div class="image-card">
+                    <img src="{{.URL}}" alt="{{.OriginalName}}" loading="lazy">
+                    <div class="image-info">
+                        {{.OriginalName}}<br>
+                        {{.UploadTime.Format "15:04:05"}}
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+    {{else}}
+        <div class="card">
+            <div class="empty-state">✨ 暂无图片，请使用小程序拍照上传</div>
+        </div>
+    {{end}}
+
+    <footer>
+        拍瞬传 · 局域网服务 | 自动刷新 ({{.Refresh}}秒) | {{ now }}
+    </footer>
+</div>
+
+<script>
+    (function() {
+        var serverURL = "{{.ServerURL}}";
+        var qrDiv = document.getElementById("qrcode");
+        if (qrDiv && typeof QRCode !== 'undefined') {
+            new QRCode(qrDiv, {
+                text: serverURL,
+                width: 128,
+                height: 128,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        } else {
+            console.error("QRCode 库未加载或容器不存在");
+        }
+    })();
+    document.getElementById('openDirBtn').addEventListener('click', function() {
+        fetch('/open-dir', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('目录已打开:', data.path);
+                } else {
+                    alert('打开目录失败');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('请求失败，请检查服务端日志');
+            });
+    });
+</script>
+</body>
+</html>

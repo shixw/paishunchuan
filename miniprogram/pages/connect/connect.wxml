@@ -1,0 +1,37 @@
+<view class="container">
+  <view class="logo-area">
+    <image class="logo" src="/images/logo.png" mode="aspectFit"></image>
+    <text class="title">拍瞬传</text>
+    <text class="subtitle">局域网拍照上传工具</text>
+  </view>
+
+  <view class="form">
+    <view class="input-group">
+      <text class="label">服务端地址</text>
+      <input 
+        class="input" 
+        placeholder="例如 192.168.1.100:5000 或 http://192.168.1.100:5000" 
+        value="{{inputUrl}}" 
+        bindinput="onInputChange"
+        disabled="{{testing}}"
+      />
+    </view>
+
+    <view class="button-group">
+      <button class="btn primary" bindtap="testConnection" disabled="{{!wifiConnected || testing}}">
+        {{testing ? '连接中...' : '手动连接'}}
+      </button>
+      <button class="btn secondary" bindtap="scanQRCode" disabled="{{testing}}">
+        📷 扫码连接
+      </button>
+    </view>
+
+    <view wx:if="{{testResult}}" class="result {{testResult.indexOf('✓')!==-1 ? 'success' : 'error'}}">
+      {{testResult}}
+    </view>
+
+    <view wx:if="{{!wifiConnected}}" class="wifi-warning">
+      ⚠️ 未检测到WiFi连接，请连接WiFi后使用
+    </view>
+  </view>
+</view>
