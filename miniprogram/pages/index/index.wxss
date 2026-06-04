@@ -86,20 +86,26 @@
   background: #cbd5e1;
   color: #64748b;
 }
-
 .tag-area {
   background: white;
   padding: 20rpx 30rpx;
   display: flex;
   align-items: center;
   border-bottom: 1rpx solid #e9eef3;
+  flex-wrap: nowrap;        /* 强制不换行 */
+  gap: 16rpx;               /* 标签与输入框间距 */
 }
+
 .tag-label {
   font-size: 28rpx;
   color: #1e293b;
   font-weight: 500;
-  width: 100rpx;
+  flex-shrink: 0;           /* 防止被压缩 */
+  white-space: nowrap;      /* 文本不换行 */
+  width: auto;              /* 自适应宽度 */
+  min-width: 100rpx;        /* 最小宽度保持视觉对齐 */
 }
+
 .tag-input {
   flex: 1;
   background: #f8fafc;
@@ -107,4 +113,5 @@
   padding: 16rpx 24rpx;
   font-size: 28rpx;
   border: none;
+  min-width: 0;             /* 解决 flex 子元素溢出问题 */
 }
