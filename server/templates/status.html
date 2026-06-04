@@ -7,7 +7,6 @@
     <meta http-equiv="refresh" content="{{.Refresh}}">
     <script src="/static/qrcode.min.js"></script>
     <style>
-        /* 样式同前，略作调整 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -23,40 +22,83 @@
             border-left: 5px solid #3b82f6;
             padding-left: 20px;
         }
-        .card {
+        .main-card {
             background: white;
             border-radius: 20px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             padding: 24px;
             margin-bottom: 24px;
-        }
-        .qr-area {
             display: flex;
-            align-items: center;
-            gap: 20px;
             flex-wrap: wrap;
+            gap: 24px;
+        }
+        .qr-section {
+            flex: 1;
+            min-width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .qr-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .qr-item {
+            text-align: center;
+            flex: 1;
         }
         .qr-box {
             background: white;
             padding: 12px;
             border-radius: 16px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: inline-block;
         }
         .qr-tip {
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             color: #475569;
+            margin-top: 8px;
         }
-        .client-list { margin-top: 16px; }
+        .info-section {
+            flex: 1;
+            min-width: 240px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .client-list {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 12px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
         .client-item {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 8px 0;
             border-bottom: 1px solid #e2e8f0;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
         .client-ip { font-family: monospace; font-weight: 500; }
         .client-time { color: #64748b; }
-        .empty-clients { color: #94a3b8; padding: 20px 0; text-align: center; }
+        .empty-clients { color: #94a3b8; padding: 16px; text-align: center; }
+        .open-dir-btn {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+        }
+        .open-dir-btn:hover {
+            background: #e2e8f0;
+        }
         .image-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -69,6 +111,28 @@
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             border: 1px solid #e9eef3;
+            position: relative;
+        }
+        .image-actions {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            display: flex;
+            gap: 8px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 20px;
+            padding: 4px 8px;
+            backdrop-filter: blur(2px);
+            z-index: 10;
+        }
+        .action-btn {
+            cursor: pointer;
+            color: white;
+            font-size: 14px;
+            transition: transform 0.1s;
+        }
+        .action-btn:hover {
+            transform: scale(1.1);
         }
         .image-card img {
             width: 100%;
@@ -102,9 +166,21 @@
             border-bottom: 2px solid #e2e8f0;
             display: inline-block;
         }
-        @media (max-width: 640px) {
-            .qr-area { flex-direction: column; align-items: flex-start; }
-            .image-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        @media (max-width: 768px) {
+            .main-card { flex-direction: column; }
         }
     </style>
 </head>
@@ -112,43 +188,51 @@
 <div class="container">
     <h1>📸 拍瞬传 · 服务端</h1>
 
-    <div class="card">
-        <div class="qr-area">
-            <div class="qr-box" id="qrcode"></div>
-            <div class="qr-tip">
-                <strong>📱 微信扫码连接</strong><br>
-                打开「拍瞬传」小程序 → 扫码连接
-                <div style="margin-top: 12px;">
-                    <button id="openDirBtn" style="background: #f1f5f9; border: none; border-radius: 40px; padding: 6px 16px; font-size: 0.8rem; cursor: pointer;">📂 打开图片目录</button>
+    <!-- 主卡片：左侧两个二维码 + 右侧客户端列表和打开目录按钮 -->
+    <div class="main-card">
+        <div class="qr-section">
+            <div class="qr-row">
+                <div class="qr-item">
+                    <div class="qr-box" id="qrcode"></div>
+                    <div class="qr-tip">🔌 服务端连接码<br>小程序扫码连接</div>
+                </div>
+                <div class="qr-item">
+                    <div class="qr-box">
+                        <img src="/static/gh_17589e751079_1280.jpg" alt="小程序码" style="width: 128px; height: 128px;">
+                    </div>
+                    <div class="qr-tip">📱 小程序码<br>扫码体验「拍瞬传」</div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="card">
-        <h2 style="font-size: 1.3rem; margin-bottom: 8px;">🔗 连接的客户端</h2>
-        <div class="client-list">
-            {{if .Clients}}
-                {{range .Clients}}
-                <div class="client-item">
-                    <span class="client-ip">{{.IP}}</span>
-                    <span class="client-time">{{.LastActive.Format "15:04:05"}}</span>
-                </div>
+        <div class="info-section">
+            <div class="client-list">
+                <h3 style="font-size: 1rem; margin-bottom: 10px;">🔗 连接的客户端</h3>
+                {{if .Clients}}
+                    {{range .Clients}}
+                    <div class="client-item">
+                        <span class="client-ip">{{.IP}}</span>
+                        <span class="client-time">{{.LastActive.Format "15:04:05"}}</span>
+                    </div>
+                    {{end}}
+                {{else}}
+                    <div class="empty-clients">暂无客户端连接</div>
                 {{end}}
-            {{else}}
-                <div class="empty-clients">暂无客户端连接</div>
-            {{end}}
+            </div>
+            <button class="open-dir-btn" id="openDirBtn">📂 打开图片目录</button>
         </div>
     </div>
 
     <!-- 按标签分组展示图片 -->
     {{if .Groups}}
         {{range .Groups}}
-        <div class="card">
+        <div class="card" style="background: white; border-radius: 20px; padding: 24px; margin-bottom: 24px;">
             <h2 class="group-title">🏷️ {{.Tag}}</h2>
             <div class="image-grid">
                 {{range .Images}}
                 <div class="image-card">
+                    <div class="image-actions">
+                        <span class="action-btn" data-url="{{.URL}}" data-action="delete">🗑️</span>
+                    </div>
                     <img src="{{.URL}}" alt="{{.OriginalName}}" loading="lazy">
                     <div class="image-info">
                         {{.OriginalName}}<br>
@@ -160,7 +244,7 @@
         </div>
         {{end}}
     {{else}}
-        <div class="card">
+        <div class="card" style="background: white; border-radius: 20px; padding: 24px; margin-bottom: 24px;">
             <div class="empty-state">✨ 暂无图片，请使用小程序拍照上传</div>
         </div>
     {{end}}
@@ -187,20 +271,55 @@
             console.error("QRCode 库未加载或容器不存在");
         }
     })();
-    document.getElementById('openDirBtn').addEventListener('click', function() {
+
+    // 非阻塞提示
+    function showToast(msg, isError = false) {
+        let toast = document.querySelector('.toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.className = 'toast';
+            document.body.appendChild(toast);
+        }
+        toast.textContent = msg;
+        toast.style.backgroundColor = isError ? 'rgba(220, 38, 38, 0.9)' : 'rgba(0,0,0,0.7)';
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 2000);
+    }
+
+    // 绑定删除按钮
+    document.querySelectorAll('.action-btn[data-action="delete"]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const url = btn.getAttribute('data-url');
+            if (!confirm('确定要删除这张图片吗？')) return;
+            const formData = new FormData();
+            formData.append('path', url);
+            try {
+                const response = await fetch('/delete-image', { method: 'POST', body: formData });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('✅ 图片已删除');
+                    setTimeout(() => location.reload(), 300);
+                } else {
+                    showToast('❌ 删除失败：' + (result.error || '未知错误'), true);
+                }
+            } catch (err) {
+                showToast('❌ 删除请求失败', true);
+            }
+        });
+    });
+
+    // 打开图片目录
+    document.getElementById('openDirBtn')?.addEventListener('click', function() {
         fetch('/open-dir', { method: 'POST' })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    console.log('目录已打开:', data.path);
-                } else {
-                    alert('打开目录失败');
-                }
+                if (!data.success) showToast('❌ 打开目录失败', true);
+                else showToast('📁 已打开图片目录');
             })
-            .catch(err => {
-                console.error(err);
-                alert('请求失败，请检查服务端日志');
-            });
+            .catch(() => showToast('❌ 请求失败', true));
     });
 </script>
 </body>

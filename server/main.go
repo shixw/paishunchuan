@@ -8,11 +8,13 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -61,6 +63,8 @@ func main() {
 
 	http.Handle("/static/", http.FileServer(http.FS(staticFS)))
 
+	http.HandleFunc("/delete-image", handleDeleteImage)
+
 	http.HandleFunc("/open-dir", handleOpenDir)
 	http.HandleFunc("/upload", handleUpload)
 	http.HandleFunc("/health", handleHealth)
@@ -82,6 +86,64 @@ func main() {
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal("启动失败:", err)
 	}
+}
+
+func handleDeleteImage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	imagePath := r.FormValue("path")
+	if imagePath == "" {
+		http.Error(w, "缺少 path 参数", http.StatusBadRequest)
+		return
+	}
+
+	// 1. URL 解码（处理中文字符）
+	decodedPath, err := url.PathUnescape(imagePath)
+	if err != nil {
+		log.Printf("URL解码失败: %v", err)
+		http.Error(w, "无效的路径编码", http.StatusBadRequest)
+		return
+	}
+
+	// 2. 安全检查：确保路径以 /received_images/ 开头
+	cleanPath := filepath.Clean(decodedPath)
+	if !strings.HasPrefix(cleanPath, "/received_images/") {
+		http.Error(w, "无效的路径", http.StatusBadRequest)
+		return
+	}
+
+	// 3. 构建绝对路径，防止目录遍历
+	absPath := filepath.Join(".", cleanPath)
+	uploadAbs, _ := filepath.Abs(uploadDir)
+	targetAbs, _ := filepath.Abs(absPath)
+	if !strings.HasPrefix(targetAbs, uploadAbs+string(os.PathSeparator)) {
+		http.Error(w, "路径越界", http.StatusForbidden)
+		return
+	}
+
+	// 4. 删除磁盘文件
+	if err := os.Remove(absPath); err != nil {
+		log.Printf("删除文件失败: %v", err)
+		http.Error(w, "删除文件失败", http.StatusInternalServerError)
+		return
+	}
+
+	// 5. 从内存切片中删除记录
+	imagesMutex.Lock()
+	defer imagesMutex.Unlock()
+	for i, img := range images {
+		if img.URL == imagePath || img.URL == decodedPath { // 兼容两种
+			images = append(images[:i], images[i+1:]...)
+			break
+		}
+	}
+
+	log.Printf("已删除图片: %s", decodedPath)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, `{"success": true}`)
 }
 
 // 处理打开目录的请求
