@@ -235,6 +235,23 @@ Page({
     }
   },
 
+  // 编辑标签（弹出对话框）
+  editTag() {
+    wx.showModal({
+        title: '修改标签',
+        editable: true,
+        placeholderText: '请输入标签',
+        content: this.data.tag,
+        success: (res) => {
+            if (res.confirm && res.content) {
+                let newTag = res.content.trim();
+                if (newTag === '') newTag = '默认';
+                this.setData({ tag: newTag });
+            }
+        }
+    });
+  },
+
   goToConnect() {
     wx.redirectTo({ url: '/pages/connect/connect' });
   }

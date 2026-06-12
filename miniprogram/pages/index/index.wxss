@@ -128,7 +128,8 @@ camera {
   text-align: right;
 }
 .item-value {
-  color: #ccc;
+  color: #fff;
+  font-weight: 500;
 }
 
 .mask-layer {
@@ -146,8 +147,8 @@ camera {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(15px);
+  background: rgba(0, 0, 0, 0.85); 
+  backdrop-filter: blur(20px);
   border-top-left-radius: 40rpx;
   border-top-right-radius: 40rpx;
   padding: 30rpx 40rpx 50rpx;
