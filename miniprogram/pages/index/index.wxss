@@ -1,117 +1,156 @@
-.container {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: #000;
-}
-
-.camera-wrapper {
-  flex: 1;
+.camera-page {
   position: relative;
+  width: 100%;
+  height: 100vh;
   overflow: hidden;
-  background-color: #000;
+  background: #000;
 }
-
-.footer {
-  background-color: #fff;
-  padding: 20rpx 30rpx;
-  border-top-left-radius: 30rpx;
-  border-top-right-radius: 30rpx;
-  box-shadow: 0 -4rpx 12rpx rgba(0,0,0,0.05);
+camera {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
-
-.shoot-btn {
-  background: #3b82f6;
-  color: white;
-  border-radius: 60rpx;
-  font-size: 32rpx;
-  font-weight: 600;
-  padding: 24rpx 0;
-  margin-bottom: 20rpx;
-}
-
-.server-info {
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 88rpx;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
-  font-size: 28rpx;
-  color: #333;
-  background: #f8fafc;
-  padding: 16rpx 20rpx;
-  border-radius: 48rpx;
-}
-
-.server-info .label {
-  width: 160rpx;
-  color: #64748b;
-}
-
-.server-info input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-family: monospace;
-}
-
-
-.status-bar {
-  background: #fff;
-  padding: 20rpx 30rpx;
-  display: flex;
   justify-content: space-between;
-  align-items: center;
-  border-bottom: 1rpx solid #e9eef3;
+  padding: 0 30rpx;
+  z-index: 10;
+}
+.service-btn {
+  font-size: 28rpx;
+  color: white;
+  background: rgba(0,0,0,0.3);
+  padding: 8rpx 20rpx;
+  border-radius: 40rpx;
 }
 .status {
   font-size: 28rpx;
+  color: white;
 }
-.status.online {
-  color: #10b981;
+.status.online { color: #4ade80; }
+.status.offline { color: #f87171; }
+.status.checking { color: #fbbf24; }
+.settings-icon {
+  font-size: 44rpx;
+  color: white;
 }
-.status.offline {
-  color: #ef4444;
-}
-.status.checking {
-  color: #f59e0b;
-}
-.reconfig-btn {
-  background: #f1f5f9;
-  color: #3b82f6;
-  border: none;
-  font-size: 24rpx;
-  padding: 8rpx 20rpx;
-  border-radius: 40rpx;
-  margin: 0;
-}
-.shoot-btn[disabled] {
-  background: #cbd5e1;
-  color: #64748b;
-}
-.tag-area {
-  background: white;
-  padding: 20rpx 30rpx;
+.shutter-btn {
+  position: fixed;
+  bottom: 80rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
   display: flex;
   align-items: center;
-  border-bottom: 1rpx solid #e9eef3;
-  flex-wrap: nowrap;        /* 强制不换行 */
-  gap: 16rpx;               /* 标签与输入框间距 */
+  justify-content: center;
+  z-index: 10;
 }
-
-.tag-label {
-  font-size: 28rpx;
-  color: #1e293b;
-  font-weight: 500;
-  flex-shrink: 0;           /* 防止被压缩 */
-  white-space: nowrap;      /* 文本不换行 */
-  width: auto;              /* 自适应宽度 */
-  min-width: 100rpx;        /* 最小宽度保持视觉对齐 */
+.shutter-inner {
+  width: 136rpx;
+  height: 136rpx;
+  border-radius: 50%;
+  background: white;
+  border: 4rpx solid rgba(0,0,0,0.2);
+  transition: transform 0.1s;
 }
-
-.tag-input {
+.shutter-btn:active .shutter-inner {
+  transform: scale(0.92);
+}
+.control-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.25);  /* 更透明 */
+  backdrop-filter: blur(15px);
+  border-top-left-radius: 40rpx;
+  border-top-right-radius: 40rpx;
+  padding: 30rpx 40rpx 50rpx;
+  z-index: 20;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+  color: white;
+}
+.panel-title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.close-icon {
+  font-size: 40rpx;
+  color: white;
+}
+.panel-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid rgba(255,255,255,0.15);
+  color: white;
+  font-size: 30rpx;
+}
+.item-label {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.tag-input-wrapper {
   flex: 1;
-  background: #f8fafc;
+  margin-left: 20rpx;
+}
+.tag-input {
+  background: rgba(255,255,255,0.2);
   border-radius: 40rpx;
-  padding: 16rpx 24rpx;
+  padding: 12rpx 24rpx;
+  color: white;
   font-size: 28rpx;
-  border: none;
-  min-width: 0;             /* 解决 flex 子元素溢出问题 */
+  text-align: right;
+}
+.item-value {
+  color: #ccc;
+}
+
+.mask-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  z-index: 15;
+}
+
+.control-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(15px);
+  border-top-left-radius: 40rpx;
+  border-top-right-radius: 40rpx;
+  padding: 30rpx 40rpx 50rpx;
+  z-index: 20;  /* 高于遮罩层 */
+  animation: slideUp 0.3s ease;
 }

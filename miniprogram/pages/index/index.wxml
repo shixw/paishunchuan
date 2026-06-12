@@ -1,21 +1,54 @@
-<view class="container">
-  <view class="status-bar">
-    <text class="status {{healthStatus}}">
-      {{healthStatus === 'online' ? '● 服务已连接' : (healthStatus === 'offline' ? '○ 服务断开' : '◐ 检测中...')}}
-    </text>
-    <button class="reconfig-btn" bindtap="goToConnect" size="mini">切换服务</button>
-  </view>
-  <view class="camera-wrapper">
-    <camera id="camera" device-position="back" flash="off" style="width: 100%; height: 100%;"></camera>
-  </view>
-  <!-- 新增标签输入区域 -->
-  <view class="tag-area">
-    <text class="tag-label">🏷️ 标签</text>
-    <input class="tag-input" placeholder="例如：会议记录、产品照片" value="{{tag}}" bindinput="onTagChange" maxlength="20" />
-  </view>
-  <view class="footer">
-    <button class="shoot-btn" bindtap="takePhoto" disabled="{{healthStatus !== 'online'}}">
-      {{healthStatus === 'online' ? '📸 拍照并上传' : '⏳ 等待连接'}}
-    </button>
-  </view>
+<view class="camera-page">
+  <!-- 全屏相机 -->
+  <camera 
+    id="camera" 
+    device-position="{{position}}" 
+    flash="{{flashMode}}" 
+    resolution="{{resolution}}"
+    style="width: 100%; height: 100%;"
+    bindready="onCameraReady"
+    binderror="onCameraError"
+  ></camera>
+
+  <!-- 顶部状态栏（半透明） -->
+  <cover-view class="top-bar">
+    <cover-view class="service-btn" bindtap="goToConnect">切换服务</cover-view>
+    <cover-view class="status-badge">
+      <text class="status {{healthStatus}}">{{healthStatus === 'online' ? '● 已连接' : (healthStatus === 'offline' ? '○ 断开' : '◐ 检测中')}}</text>
+    </cover-view>
+    <cover-view class="settings-icon" bindtap="togglePanel">⚙️</cover-view>
+  </cover-view>
+
+  <!-- 底部悬浮拍照按钮 -->
+  <cover-view class="shutter-btn" bindtap="takePhoto">
+    <cover-view class="shutter-inner"></cover-view>
+  </cover-view>
+
+  <cover-view wx:if="{{showPanel}}" class="mask-layer" bindtap="togglePanel"></cover-view>
+
+  <!-- 控制面板（透明，可关闭） -->
+  <cover-view wx:if="{{showPanel}}" class="control-panel">
+    <cover-view class="panel-header">
+      <cover-view class="panel-title">拍摄设置</cover-view>
+      <cover-view class="close-icon" bindtap="togglePanel">✕</cover-view>
+    </cover-view>
+    <cover-view class="panel-item">
+      <cover-view class="item-label">🏷️ 标签</cover-view>
+      <cover-view class="tag-input-wrapper">
+        <input type="text" class="tag-input" placeholder="例如：会议记录" value="{{tag}}" bindinput="onTagChange" maxlength="20" />
+      </cover-view>
+    </cover-view>
+    <cover-view class="panel-item" bindtap="switchCamera">
+      <cover-view class="item-label">🔄 翻转摄像头</cover-view>
+      <cover-view class="item-value">{{position === 'back' ? '后置' : '前置'}}</cover-view>
+    </cover-view>
+    <cover-view class="panel-item" bindtap="toggleFlash">
+      <cover-view class="item-label">💡 闪光灯</cover-view>
+      <cover-view class="item-value">{{flashText}}</cover-view>
+    </cover-view>
+    <cover-view class="panel-item" bindtap="toggleResolution">
+      <cover-view class="item-label">📷 分辨率</cover-view>
+      <cover-view class="item-value">{{resolutionText}}</cover-view>
+    </cover-view>
+  </cover-view>
 </view>
