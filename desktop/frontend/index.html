@@ -54,7 +54,7 @@
 <body>
 <div class="container">
     <h1>
-        <img src="/static/logo.png" alt="拍瞬传 Logo">
+        <img src="static/logo.png" alt="拍瞬传 Logo">
         拍瞬传 · 服务端
     </h1>
     <div class="card">
@@ -68,7 +68,7 @@
                 </div>
                 <div class="qr-item">
                     <div class="qr-box">
-                        <img id="miniprogramQR" alt="小程序码" style="width: 128px; height: 128px;">
+                        <img id="miniprogramQR" src="static/gh_17589e751079_1280.jpg" alt="小程序码" style="width: 128px; height: 128px;">
                     </div>
                     <div class="qr-tip">📱 微信扫码体验「拍瞬传」<br>小程序码</div>
                 </div>
@@ -209,11 +209,6 @@
             const port = await window.go.main.App.GetHTTPPort();
             API_BASE = `http://localhost:${port}`;
             console.log('API_BASE:', API_BASE);
-            // 动态设置小程序码图片
-            const miniprogramQR = document.getElementById('miniprogramQR');
-            if (miniprogramQR) {
-                miniprogramQR.src = API_BASE + '/static/gh_17589e751079_1280.jpg';
-            }
             loadQR();
             refresh();
             setupAutoRefresh();
@@ -222,17 +217,9 @@
                 const data = await resp.json();
                 showToast(data.success ? '📂 已打开图片目录' : '❌ 打开失败', !data.success);
             };
-
-            // 在 initAPI 中
-            const logoImg = document.querySelector('h1 img');
-            if (logoImg) logoImg.src = API_BASE + '/static/logo.png';
         } else {
             console.warn('Wails runtime not available, fallback to 5000');
             API_BASE = 'http://localhost:5000';
-            const miniprogramQR = document.getElementById('miniprogramQR');
-            if (miniprogramQR) {
-                miniprogramQR.src = API_BASE + '/static/gh_17589e751079_1280.jpg';
-            }
             loadQR();
             refresh();
             setupAutoRefresh();
