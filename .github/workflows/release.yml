@@ -6,46 +6,75 @@ on:
       - 'v*'
 
 jobs:
-  build:
-    name: Build Desktop App
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: [windows/amd64, darwin/amd64, darwin/arm64, linux/amd64]
+  build-windows:
+    runs-on: windows-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
-
-      - name: Build for ${{ matrix.platform }}
-        working-directory: ./desktop   # 进入桌面端目录
+      - name: Build
+        working-directory: ./desktop
         run: |
-          wails build -platform ${{ matrix.platform }} -ldflags "-s -w"
+          wails build -platform windows/amd64 -ldflags "-s -w"
           mkdir -p ../dist
-          if [[ "${{ matrix.platform }}" == windows/* ]]; then
-            cp build/bin/拍瞬传.exe ../dist/拍瞬传-${{ matrix.platform }}.exe
-          elif [[ "${{ matrix.platform }}" == darwin/* ]]; then
-            cp -r build/bin/拍瞬传.app ../dist/拍瞬传-${{ matrix.platform }}.app
-          else
-            cp build/bin/拍瞬传 ../dist/拍瞬传-${{ matrix.platform }}
-          fi
-
+          Copy-Item -Path "build/bin/拍瞬传.exe" -Destination "../dist/拍瞬传-windows-amd64.exe"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: 拍瞬传-${{ matrix.platform }}
+          name: 拍瞬传-windows-amd64
+          path: dist/*
+
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      - name: Build
+        working-directory: ./desktop
+        run: |
+          wails build -platform darwin/${{ matrix.arch }} -ldflags "-s -w"
+          mkdir -p ../dist
+          # 将 .app 压缩为 zip，便于上传和下载
+          zip -r "../dist/拍瞬传-darwin-${{ matrix.arch }}.zip" "build/bin/拍瞬传.app"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 拍瞬传-darwin-${{ matrix.arch }}
+          path: dist/*
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      - name: Build
+        working-directory: ./desktop
+        run: |
+          wails build -platform linux/amd64 -ldflags "-s -w"
+          mkdir -p ../dist
+          cp "build/bin/拍瞬传" "../dist/拍瞬传-linux-amd64"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 拍瞬传-linux-amd64
           path: dist/*
 
   release:
-    name: Create Release
-    needs: build
+    needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -54,7 +83,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
