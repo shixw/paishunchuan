@@ -33,5 +33,10 @@
     <view wx:if="{{!wifiConnected}}" class="wifi-warning">
       ⚠️ 未检测到WiFi连接，请连接WiFi后使用
     </view>
+
+    <!-- 新增帮助链接 -->
+    <view class="help-link" bindtap="gotoHelp">
+      ❓ 使用帮助
+    </view>
   </view>
 </view>

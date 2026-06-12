@@ -22,6 +22,15 @@
 
 ---
 
+## 📱 立即体验
+
+微信扫码打开小程序，立即将手机照片传到电脑。
+
+![小程序码](docs/images/miniprogram-qrcode.jpg)
+
+
+---
+
 ## ✨ 功能特性
 
 ### 🖥️ 桌面端服务 (Wails)
@@ -51,10 +60,15 @@
 
 ---
 
-## 🖼️ 项目截图（需要准备）
+## 🖼️ 项目截图
 
-> ![桌面端主界面](docs/images/screenshot-desktop-main.png)
-> ![小程序相机界面](docs/images/screenshot-miniprogram-camera.png)
+| 桌面端主界面 | 小程序连接页 |
+|:---:|:---:|
+| <img src="docs/images/screenshot-desktop-main.png" width="200" /> | <img src="docs/images/screenshot-miniprogram-connect.png" width="200" /> |
+
+| 小程序相机界面 | 小程序设置面板 | 小程序帮助页 |
+|:---:|:---:|:---:|
+| <img src="docs/images/screenshot-miniprogram-camera.png" width="200" /> | <img src="docs/images/screenshot-miniprogram-panel.png" width="200" /> | <img src="docs/images/screenshot-miniprogram-help.png" width="200" /> |
 
 ---
 

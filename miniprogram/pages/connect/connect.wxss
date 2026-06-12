@@ -93,3 +93,11 @@
   border-radius: 40rpx;
   font-size: 28rpx;
 }
+
+.help-link {
+  margin-top: 60rpx;
+  color: #3b82f6;
+  font-size: 28rpx;
+  text-decoration: underline;
+  text-align: center;
+}

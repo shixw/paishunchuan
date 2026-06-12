@@ -96,5 +96,8 @@ Page({
         }
       }
     });
+  },
+  gotoHelp() {
+    wx.navigateTo({ url: '/pages/help/help' });
   }
 });

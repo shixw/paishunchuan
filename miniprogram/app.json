@@ -1,7 +1,8 @@
 {
   "pages": [
     "pages/connect/connect",
-    "pages/index/index"
+    "pages/index/index",
+    "pages/help/help"
   ],
   "window": {
     "navigationBarBackgroundColor": "#ffffff",

@@ -1,0 +1,41 @@
+<view class="container">
+  <view class="section">
+    <view class="title">📖 使用说明</view>
+    <view class="step">1. 在电脑上下载并运行「拍瞬传」桌面端软件。</view>
+    <view class="step">2. 确保手机和电脑连接同一Wi-Fi网络。</view>
+    <view class="step">3. 打开本小程序，点击「扫码连接」，扫描电脑软件上的二维码。</view>
+    <view class="step">4. 连接成功后，即可拍照上传，照片会自动保存到电脑指定文件夹。</view>
+  </view>
+
+  <view class="section">
+    <view class="title">💻 桌面端下载</view>
+    <view class="download-item">
+      <text>📦 GitHub Releases</text>
+      <button class="download-btn" bindtap="copyGitHub">复制链接</button>
+    </view>
+    <view class="download-item">
+      <text>☁️ 百度网盘</text>
+      <button class="download-btn" bindtap="copyBaidu">复制链接</button>
+    </view>
+    <view wx:if="{{baiduCode}}" class="note">提取码：{{baiduCode}}</view>
+    <view class="note">⚠️ 请根据您的电脑系统选择对应版本：Windows (.exe)、macOS (.app)、Linux (可执行文件)</view>
+  </view>
+
+  <view class="section">
+    <view class="title">❓ 常见问题</view>
+    <view class="qa-item">
+      <view class="qa-q">Q: 无法连接服务端？</view>
+      <view class="qa-a">A: 请确保手机和电脑在同一WiFi，并检查电脑防火墙是否允许应用通信。</view>
+    </view>
+    <view class="qa-item">
+      <view class="qa-q">Q: 上传失败？</view>
+      <view class="qa-a">A: 请检查服务端是否正常运行，以及端口是否被占用。</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="title">📄 备案信息</view>
+    <view class="info">小程序备案号：京ICP备2026034358号</view>
+    <view class="info">© 2026 拍瞬传</view>
+  </view>
+</view>
