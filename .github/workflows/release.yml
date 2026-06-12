@@ -3,11 +3,11 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'           # 推送 v1.0.0、v2.1.3 等标签时触发
+      - 'v*'
 
 jobs:
   build:
-    name: Build Wails Desktop App
+    name: Build Desktop App
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -25,21 +25,22 @@ jobs:
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
       - name: Build for ${{ matrix.platform }}
+        working-directory: ./desktop   # 进入桌面端目录
         run: |
           wails build -platform ${{ matrix.platform }} -ldflags "-s -w"
-          mkdir -p dist
+          mkdir -p ../dist
           if [[ "${{ matrix.platform }}" == windows/* ]]; then
-            cp build/bin/paishunchuan-desktop.exe dist/paishunchuan-desktop-${{ matrix.platform }}.exe
+            cp build/bin/拍瞬传.exe ../dist/拍瞬传-${{ matrix.platform }}.exe
           elif [[ "${{ matrix.platform }}" == darwin/* ]]; then
-            cp -r build/bin/paishunchuan-desktop.app dist/paishunchuan-desktop-${{ matrix.platform }}.app
+            cp -r build/bin/拍瞬传.app ../dist/拍瞬传-${{ matrix.platform }}.app
           else
-            cp build/bin/paishunchuan-desktop dist/paishunchuan-desktop-${{ matrix.platform }}
+            cp build/bin/拍瞬传 ../dist/拍瞬传-${{ matrix.platform }}
           fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: paishunchuan-${{ matrix.platform }}
+          name: 拍瞬传-${{ matrix.platform }}
           path: dist/*
 
   release:

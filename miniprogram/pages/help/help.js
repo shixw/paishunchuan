@@ -16,6 +16,10 @@ Page({
     this.copyUrl(this.data.githubUrl);
   },
   copyBaidu() {
-    this.copyUrl(this.data.baiduUrl, '百度网盘链接已复制');
+    let fullUrl = this.data.baiduUrl;
+    if (this.data.baiduCode && !fullUrl.includes('pwd=')) {
+      fullUrl += (fullUrl.includes('?') ? '&' : '?') + 'pwd=' + encodeURIComponent(this.data.baiduCode);
+    }
+    this.copyUrl(fullUrl, '百度网盘链接(含提取码)已复制');
   }
 });
