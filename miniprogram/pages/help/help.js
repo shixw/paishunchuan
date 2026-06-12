@@ -1,9 +1,10 @@
 Page({
   data: {
     githubUrl: 'https://github.com/shixw/paishunchuan/releases/latest',  // 替换为实际GitHub地址
-    baiduUrl: 'https://pan.baidu.com/s/xxxxxx',  // 替换为百度网盘分享链接
-    baiduCode: '提取码'  // 替换为实际提取码
+    baiduUrl: 'https://pan.baidu.com/s/1wlCR9NL4ixBJV-YuRuthtw',  // 替换为百度网盘分享链接
+    baiduCode: 'ehcb'  // 替换为实际提取码
   },
+
   copyUrl(url, successMsg = '下载链接已复制') {
     wx.setClipboardData({
       data: url,

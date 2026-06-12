@@ -18,7 +18,7 @@
       <button class="download-btn" bindtap="copyBaidu">复制链接</button>
     </view>
     <view wx:if="{{baiduCode}}" class="note">提取码：{{baiduCode}}</view>
-    <view class="note">⚠️ 请根据您的电脑系统选择对应版本：Windows (.exe)、macOS (.app)、Linux (可执行文件)</view>
+    <view class="note">⚠️ 请根据您的电脑系统选择对应版本：Windows (.exe)、macOS (.app)</view>
   </view>
 
   <view class="section">
