@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拍瞬传 · 服务端</title>
+    <script src="http://localhost:5000/static/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f7fb;
+            padding: 20px;
+            color: #1e293b;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-left: 5px solid #3b82f6;
+            padding-left: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .two-columns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+        .qr-column {
+            flex: 1;
+            min-width: 280px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .qr-item {
+            text-align: center;
+            flex: 1;
+        }
+        .qr-box {
+            background: white;
+            padding: 12px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        .qr-tip {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #475569;
+        }
+        .info-column {
+            flex: 1;
+            min-width: 240px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .button-group {
+            display: flex;
+            gap: 12px;
+        }
+        .open-dir-btn, .refresh-btn {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+        }
+        .open-dir-btn:hover, .refresh-btn:hover {
+            background: #e2e8f0;
+        }
+        .setting-item {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        .client-list {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 12px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+        .client-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.85rem;
+        }
+        .client-ip { font-family: monospace; font-weight: 500; }
+        .client-time { color: #64748b; }
+        .empty-clients { color: #94a3b8; padding: 16px; text-align: center; }
+
+        .image-group {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e9eef3;
+        }
+        .group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 8px 4px;
+        }
+        .group-title {
+            font-size: 14px;
+            font-weight: 500;
+            background: #eef2ff;
+            padding: 4px 12px;
+            border-radius: 24px;
+            color: #1e40af;
+        }
+        .toggle-icon {
+            font-size: 14px;
+            color: #64748b;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin-top: 8px;
+            margin-bottom: 16px;
+        }
+        .image-grid.collapsed {
+            display: none;
+        }
+        .image-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
+            border: 1px solid #e9eef3;
+        }
+        .image-card img {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            display: block;
+        }
+        .image-info {
+            padding: 6px;
+            font-size: 0.65rem;
+            text-align: center;
+            background: #fff;
+        }
+        .image-actions {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            display: flex;
+            gap: 6px;
+            z-index: 2;
+        }
+        .copy-btn, .delete-btn {
+            background: rgba(0,0,0,0.6);
+            border-radius: 20px;
+            padding: 2px 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+        .copy-btn:hover, .delete-btn:hover {
+            background: rgba(0,0,0,0.8);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #94a3b8;
+        }
+        @media (max-width: 768px) {
+            .two-columns { flex-direction: column; }
+            .image-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+        }
+        .confirm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .confirm-box {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            width: 280px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .confirm-box p {
+            margin-bottom: 24px;
+            font-size: 16px;
+        }
+        .confirm-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .confirm-buttons button {
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: none;
+            cursor: pointer;
+        }
+        .confirm-buttons .confirm-btn {
+            background: #3b82f6;
+            color: white;
+        }
+        .confirm-buttons .cancel-btn {
+            background: #e2e8f0;
+            color: #334155;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 14px;
+            z-index: 10001;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📸 拍瞬传 · 服务端</h1>
+
+    <div class="card">
+        <div class="two-columns">
+            <div class="qr-column">
+                <div class="qr-item">
+                    <!-- <div class="qr-box" id="qrcode"></div> -->
+                    <div class="qr-box">
+                        <img id="qrcode" width="128" height="128" alt="服务端二维码">
+                    </div>
+                    <div class="qr-tip">🔌 服务端连接码<br>小程序扫码连接</div>
+                </div>
+                <div class="qr-item">
+                    <div class="qr-box">
+                        <img src="http://localhost:5000/static/gh_17589e751079_1280.jpg" alt="小程序码" style="width: 128px; height: 128px;">
+                    </div>
+                    <div class="qr-tip">📱 微信扫码体验「拍瞬传」<br>小程序码</div>
+                </div>
+            </div>
+            <div class="info-column">
+                <div class="button-group">
+                    <button class="open-dir-btn" id="openDirBtn">📂 打开图片目录</button>
+                    <button class="refresh-btn" id="refreshBtn">🔄 手动刷新</button>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="autoCopyCheckbox"> 接收后自动复制图片到剪贴板（需后端支持）
+                    </label>
+                </div>
+                <div class="client-list">
+                    <h3 style="font-size: 1rem; margin-bottom: 10px;">🔗 连接的客户端</h3>
+                    <div id="clientList">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📷 已接收图片</h2>
+        <div id="imagesContainer"></div>
+    </div>
+
+    <footer>拍瞬传 · 局域网服务 | 点击图片复制按钮可复制图片到剪贴板</footer>
+</div>
+
+<script>
+    let API_BASE = '';
+
+    function showToast(msg, isError = false) {
+        let toast = document.querySelector('.toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.className = 'toast';
+            document.body.appendChild(toast);
+        }
+        toast.textContent = msg;
+        toast.style.backgroundColor = isError ? 'rgba(220, 38, 38, 0.9)' : 'rgba(0,0,0,0.8)';
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+    }
+
+    function showConfirm(message) {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'confirm-overlay';
+            overlay.innerHTML = `
+                <div class="confirm-box">
+                    <p>${message}</p>
+                    <div class="confirm-buttons">
+                        <button class="confirm-btn">确定</button>
+                        <button class="cancel-btn">取消</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            const confirmBtn = overlay.querySelector('.confirm-btn');
+            const cancelBtn = overlay.querySelector('.cancel-btn');
+            const cleanup = () => overlay.remove();
+            confirmBtn.onclick = () => { cleanup(); resolve(true); };
+            cancelBtn.onclick = () => { cleanup(); resolve(false); };
+            overlay.onclick = (e) => { if (e.target === overlay) { cleanup(); resolve(false); } };
+        });
+    }
+
+    async function copyImageToClipboard(imageUrl) {
+        try {
+            const urlPath = new URL(imageUrl).pathname;
+            const formData = new FormData();
+            formData.append('path', urlPath);
+            const response = await fetch(API_BASE + '/api/copy-image', { method: 'POST', body: formData });
+            const data = await response.json();
+            if (data.success) {
+                showToast('✅ 图片已复制到剪贴板');
+            } else {
+                showToast('❌ 复制失败', true);
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('❌ 复制请求失败', true);
+        }
+    }
+
+    async function loadClients() {
+        if (!API_BASE) return;
+        try {
+            const resp = await fetch(API_BASE + '/api/clients');
+            const clients = await resp.json();
+            const container = document.getElementById('clientList');
+            if (clients.length === 0) {
+                container.innerHTML = '<div class="empty-clients">暂无客户端连接</div>';
+                return;
+            }
+            container.innerHTML = clients.map(c => `
+                <div class="client-item">
+                    <span class="client-ip">📱 ${c.ip}</span>
+                    <span class="client-time">${new Date(c.lastActive).toLocaleTimeString()}</span>
+                </div>
+            `).join('');
+        } catch (err) {
+            document.getElementById('clientList').innerHTML = '<div class="empty-clients">加载失败</div>';
+        }
+    }
+
+    async function loadImages() {
+        if (!API_BASE) return;
+        try {
+            const resp = await fetch(API_BASE + '/api/images');
+            const groups = await resp.json();
+            const container = document.getElementById('imagesContainer');
+            if (Object.keys(groups).length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无图片</div>';
+                return;
+            }
+            let html = '';
+            for (const [tag, images] of Object.entries(groups)) {
+                const groupId = `group_${Date.now()}_${tag.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                html += `
+                    <div class="image-group">
+                        <div class="group-header" data-group="${groupId}">
+                            <span class="group-title">🏷️ ${tag}</span>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                        <div class="image-grid" id="${groupId}">
+                            ${images.map(img => `
+                                <div class="image-card">
+                                    <div class="image-actions">
+                                        <div class="copy-btn" data-url="${API_BASE}${img.url}">📋</div>
+                                        <div class="delete-btn" data-url="${img.url}">🗑️</div>
+                                    </div>
+                                    <img src="${API_BASE}${img.url}" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%25\' height=\'100%25\'%3E%3Crect width=\'100%25\' height=\'100%25\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23999\'%3E加载失败%3C/text%3E%3C/svg%3E'">
+                                    <div class="image-info">${img.originalName}<br>${new Date(img.uploadTime).toLocaleTimeString()}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+
+            // 折叠/展开
+            document.querySelectorAll('.group-header').forEach(header => {
+                const groupId = header.getAttribute('data-group');
+                const grid = document.getElementById(groupId);
+                const icon = header.querySelector('.toggle-icon');
+                let collapsed = false;
+                header.onclick = () => {
+                    collapsed = !collapsed;
+                    grid.classList.toggle('collapsed', collapsed);
+                    icon.textContent = collapsed ? '▶' : '▼';
+                };
+            });
+
+            // 复制按钮事件
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const url = btn.getAttribute('data-url');
+                    if (url) copyImageToClipboard(url);
+                };
+            });
+
+            // 删除按钮事件
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.onclick = async (e) => {
+                    e.stopPropagation();
+                    const url = btn.getAttribute('data-url');
+                    if (!url) return;
+                    const confirmed = await showConfirm('确定删除这张图片吗？');
+                    if (!confirmed) return;
+                    const encoded = encodeURIComponent(url);
+                    try {
+                        const res = await fetch(API_BASE + `/api/image?path=${encoded}`, { method: 'DELETE' });
+                        const data = await res.json();
+                        if (data.success) {
+                            refresh();
+                        } else {
+                            showToast('删除失败：' + (data.error || '未知错误'), true);
+                        }
+                    } catch (err) {
+                        showToast('删除请求失败', true);
+                    }
+                };
+            });
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = '<div class="empty-state">加载失败</div>';
+        }
+    }
+
+    // 修改 loadQR 函数
+    function loadQR() {
+        const qrImg = document.getElementById('qrcode');
+        if (!qrImg) return;
+        // 使用后端生成的二维码图片（包含正确的局域网IP）
+        qrImg.src = API_BASE + '/qrcode?t=' + Date.now(); // 加时间戳避免缓存
+    }
+
+    function refresh() {
+        loadClients();
+        loadImages();
+    }
+
+    async function initAPI() {
+        if (window.go && window.go.main && window.go.main.App) {
+            const port = await window.go.main.App.GetHTTPPort();
+            API_BASE = `http://localhost:${port}`;
+            console.log('API_BASE:', API_BASE);
+            // 初始化所有依赖 API_BASE 的功能
+            loadQR();
+            refresh();
+            setupAutoRefresh();
+            // 打开目录按钮
+            document.getElementById('openDirBtn').onclick = async () => {
+                const resp = await fetch(API_BASE + '/open-dir');
+                const data = await resp.json();
+                showToast(data.success ? '已打开图片目录' : '打开失败', !data.success);
+            };
+        } else {
+            console.warn('Wails runtime not available, fallback to 5000');
+            API_BASE = 'http://localhost:5000';
+            loadQR();
+            refresh();
+            setupAutoRefresh();
+        }
+    }
+
+    // 监听后端事件自动刷新
+    function setupAutoRefresh() {
+        if (window.runtime) {
+            window.runtime.EventsOn('imageUploaded', () => {
+                console.log('触发自动刷新 (imageUploaded)');
+                refresh();
+            });
+            window.runtime.EventsOn('clientActive', () => {
+                console.log('触发自动刷新 (clientActive)');
+                refresh();
+            });
+            window.runtime.EventsOn('clientInactive', () => {
+                console.log('触发自动刷新 (clientInactive)');
+                refresh();
+            });
+        } else {
+            let retry = 0;
+            const timer = setInterval(() => {
+                if (window.runtime) {
+                    clearInterval(timer);
+                    window.runtime.EventsOn('imageUploaded', () => refresh());
+                    window.runtime.EventsOn('clientActive', () => refresh());
+                    window.runtime.EventsOn('clientInactive', () => refresh());
+                } else if (++retry > 20) {
+                    clearInterval(timer);
+                    console.warn('window.runtime 不可用，无法自动刷新');
+                }
+            }, 200);
+        }
+    }
+
+    // 开关仅前端记忆
+    const autoCopyCheckbox = document.getElementById('autoCopyCheckbox');
+    // 默认未选中（不存储状态）
+    autoCopyCheckbox.checked = false;
+    autoCopyCheckbox.addEventListener('change', async (e) => {
+        const enabled = e.target.checked;
+        try {
+            const response = await fetch(API_BASE + '/api/setting', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ autoCopy: enabled })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showToast(`✅ 自动复制已${enabled ? '开启' : '关闭'}`, false);
+            } else {
+                showToast('❌ 设置失败', true);
+                // 恢复开关状态
+                autoCopyCheckbox.checked = !enabled;
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('❌ 网络错误，设置失败', true);
+            autoCopyCheckbox.checked = !enabled;
+        }
+    });
+    // const saved = localStorage.getItem('autoCopy');
+    // if (saved === 'true') autoCopyCheckbox.checked = true;
+
+    // 禁止右键菜单
+    document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
+
+    // 手动刷新按钮
+    document.getElementById('refreshBtn').onclick = () => refresh();
+
+    // 启动初始化
+    initAPI();
+</script>
+</body>
+</html>

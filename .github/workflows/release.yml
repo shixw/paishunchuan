@@ -3,19 +3,15 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'           # 推送 v1.0.0、v2.1.3 等标签时触发
 
 jobs:
   build:
-    name: Build Go binaries
+    name: Build Wails Desktop App
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goos: [windows, linux, darwin]
-        goarch: [amd64, arm64]
-        exclude:
-          - goos: windows
-            goarch: arm64
+        platform: [windows/amd64, darwin/amd64, darwin/arm64, linux/amd64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,22 +21,29 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Build server binary
-        working-directory: ./server
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Build for ${{ matrix.platform }}
         run: |
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w" -o psc-server-${{ matrix.goos }}-${{ matrix.goarch }} main.go
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            mv psc-server-${{ matrix.goos }}-${{ matrix.goarch }} psc-server-${{ matrix.goos }}-${{ matrix.goarch }}.exe
+          wails build -platform ${{ matrix.platform }} -ldflags "-s -w"
+          mkdir -p dist
+          if [[ "${{ matrix.platform }}" == windows/* ]]; then
+            cp build/bin/paishunchuan-desktop.exe dist/paishunchuan-desktop-${{ matrix.platform }}.exe
+          elif [[ "${{ matrix.platform }}" == darwin/* ]]; then
+            cp -r build/bin/paishunchuan-desktop.app dist/paishunchuan-desktop-${{ matrix.platform }}.app
+          else
+            cp build/bin/paishunchuan-desktop dist/paishunchuan-desktop-${{ matrix.platform }}
           fi
 
-      - name: Upload artifacts
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: psc-server-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: server/psc-server-*
+          name: paishunchuan-${{ matrix.platform }}
+          path: dist/*
 
   release:
-    name: Create Release and Upload Assets
+    name: Create Release
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -50,9 +53,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-
-      - name: List artifacts (debug)
-        run: ls -R artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

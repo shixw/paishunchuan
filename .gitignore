@@ -87,3 +87,18 @@ yarn-error.log*
 
 
 /server/received_images/
+
+/desktop/received_images/
+
+# Wails bin directory
+desktop/build/bin
+# Wails Windows NSIS support files
+desktop/build/windows/installer/wails_tools.nsh
+desktop/build/windows/installer/tmp/
+
+# IDEs
+.idea
+.vscode
+
+# The black hole that is...
+ndesktop/ode_modules

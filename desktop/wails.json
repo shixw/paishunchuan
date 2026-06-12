@@ -1,0 +1,11 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "拍瞬传",
+  "outputfilename": "paishunchuan-desktop",
+  "wailsjsdir": "./frontend",
+  "icon": "./build/appicon.png",
+  "author": {
+    "name": "shixw",
+    "email": "shixw_usr@126.com"
+  }
+}
