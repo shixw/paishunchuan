@@ -7,6 +7,7 @@ Page({
     inputUrl: '',
     testing: false,
     testResult: '',
+    testSuccess: false,   
     wifiConnected: true
   },
 
@@ -61,20 +62,20 @@ Page({
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       url = 'http://' + url;
     }
-    this.setData({ serverUrl: url, testing: true, testResult: '' });
+    this.setData({ serverUrl: url, testing: true, testResult: '', testSuccess: false });
     try {
       const ok = await api.testConnection(url);
       if (ok) {
-        this.setData({ testResult: '✓ 连接成功', testing: false });
+        this.setData({ testResult: '✓ 连接成功', testSuccess: true, testing: false });
         app.setServerUrl(url);
         app.setConnected(true);
         // 连接成功后跳转到拍照页，拍照页会自己启动心跳
         wx.redirectTo({ url: '/pages/index/index' });
       } else {
-        this.setData({ testResult: '✗ 连接失败，请检查地址和服务端', testing: false });
+        this.setData({ testResult: '✗ 连接失败，请检查地址和服务端', testSuccess: false, testing: false });
       }
     } catch (err) {
-      this.setData({ testResult: '✗ 连接异常：' + err.message, testing: false });
+      this.setData({ testResult: '✗ 连接异常：' + err.message, testSuccess: false, testing: false });
     }
   },
 

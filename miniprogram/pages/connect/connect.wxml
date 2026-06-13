@@ -26,7 +26,7 @@
       </button>
     </view>
 
-    <view wx:if="{{testResult}}" class="result {{testResult.indexOf('✓')!==-1 ? 'success' : 'error'}}">
+    <view wx:if="{{testResult}}" class="result {{testSuccess ? 'success' : 'error'}}">
       {{testResult}}
     </view>
 

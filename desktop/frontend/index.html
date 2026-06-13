@@ -18,8 +18,8 @@
         .qr-tip { margin-top: 8px; font-size: 12px; color: #475569; }
         .info-column { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 20px; }
         .button-group { display: flex; gap: 12px; }
-        .open-dir-btn, .refresh-btn { background: #f1f5f9; border: none; border-radius: 40px; padding: 10px 16px; font-size: 0.9rem; cursor: pointer; flex: 1; text-align: center; transition: background 0.2s; }
-        .open-dir-btn:hover, .refresh-btn:hover { background: #e2e8f0; }
+        .open-dir-btn, .refresh-btn, .open-log-btn { background: #f1f5f9; border: none; border-radius: 40px; padding: 10px 16px; font-size: 0.9rem; cursor: pointer; flex: 1; text-align: center; transition: background 0.2s; }
+        .open-dir-btn:hover, .refresh-btn:hover, .open-log-btn:hover { background: #e2e8f0; }
         .setting-item { background: #f8fafc; border-radius: 16px; padding: 10px 12px; font-size: 0.85rem; text-align: center; }
         .client-list { background: #f8fafc; border-radius: 16px; padding: 12px; max-height: 240px; overflow-y: auto; }
         .client-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
@@ -75,8 +75,9 @@
             </div>
             <div class="info-column">
                 <div class="button-group">
-                    <button class="open-dir-btn" id="openDirBtn">📂 打开图片目录</button>
+                    <button class="open-dir-btn" id="openDirBtn">📂 图片目录</button>
                     <button class="refresh-btn" id="refreshBtn">🔄 手动刷新</button>
+                    <button class="open-log-btn" id="openLogBtn">📄 日志文件</button>
                 </div>
                 <div class="setting-item">
                     <label><input type="checkbox" id="autoCopyCheckbox"> 📋 接收后自动复制图片到剪贴板</label>
@@ -217,6 +218,21 @@
                 const data = await resp.json();
                 showToast(data.success ? '📂 已打开图片目录' : '❌ 打开失败', !data.success);
             };
+
+            document.getElementById('openLogBtn').addEventListener('click', async () => {
+                try {
+                    const response = await fetch(API_BASE + '/open-log');
+                    const data = await response.json();
+                    if (data.success) {
+                        showToast('📄 已打开日志文件所在位置');
+                    } else {
+                        showToast('❌ 打开日志文件失败', true);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('❌ 请求失败', true);
+                }
+            });
         } else {
             console.warn('Wails runtime not available, fallback to 5000');
             API_BASE = 'http://localhost:5000';
@@ -254,7 +270,7 @@
         } catch (err) { showToast('❌ 网络错误，设置失败', true); autoCopyCheckbox.checked = !enabled; }
     });
     document.getElementById('refreshBtn').onclick = () => refresh();
-    document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
+   // document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
     initAPI();
 </script>
 </body>

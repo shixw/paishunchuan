@@ -55,6 +55,8 @@ type App struct {
 	clientsMutex sync.RWMutex
 
 	autoCopy bool // 是否自动复制到剪贴板
+
+	logFilePath string
 }
 
 // ---------- 构造函数 ----------
@@ -93,6 +95,21 @@ func (a *App) startup(ctx context.Context) {
 		log.Fatal("无法创建图片保存目录:", err)
 	}
 
+	a.logFilePath = filepath.Join(home, "拍瞬传日志.log")
+
+	// 启动时删除旧的日志文件（避免堆积）
+	if err := os.Remove(a.logFilePath); err != nil && !os.IsNotExist(err) {
+		log.Printf("删除旧日志文件失败: %v", err)
+	}
+
+	logFile, err := os.OpenFile(a.logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Printf("无法创建日志文件: %v", err)
+	} else {
+		log.SetOutput(logFile)
+		log.Println("===== 应用启动 =====")
+	}
+
 	// 查找可用端口
 	port := findAvailablePort(5000)
 	if port == 0 {
@@ -127,6 +144,7 @@ func (a *App) startHTTPServer() {
 	mux.HandleFunc("/api/setting", a.handleSetting)
 	mux.HandleFunc("/qrcode", a.handleQRCode)
 	mux.HandleFunc("/open-dir", a.handleOpenDir)
+	mux.HandleFunc("/open-log", a.handleOpenLog)
 
 	// 静态文件服务（嵌入或外部目录，只读）
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -165,7 +183,35 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 // ---------- 业务处理 ----------
 
-// 处理图片复制请求（前端主动复制）
+func (a *App) handleOpenLog(w http.ResponseWriter, r *http.Request) {
+	if a.logFilePath == "" {
+		http.Error(w, "日志文件路径未设置", http.StatusInternalServerError)
+		return
+	}
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		// Windows 使用 explorer 并选中文件
+		cmd = exec.Command("explorer", "/select,", a.logFilePath)
+	case "darwin":
+		cmd = exec.Command("open", "-R", a.logFilePath)
+	case "linux":
+		cmd = exec.Command("xdg-open", filepath.Dir(a.logFilePath))
+	default:
+		http.Error(w, "unsupported OS", http.StatusNotImplemented)
+		return
+	}
+	if err := cmd.Start(); err != nil {
+		log.Printf("打开日志文件失败: %v", err)
+		http.Error(w, "failed to open log", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"success":true}`))
+}
+
+// handleCopyImage 处理图片复制请求（前端主动复制）
+// handleCopyImage 处理图片复制请求
 func (a *App) handleCopyImage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -177,47 +223,67 @@ func (a *App) handleCopyImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 解码并验证路径
 	decodedPath, err := url.PathUnescape(imagePath)
 	if err != nil {
 		http.Error(w, "invalid path encoding", http.StatusBadRequest)
 		return
 	}
-	cleanPath := filepath.Clean(decodedPath)
-	// 去掉 /received_images/ 前缀
-	relPath := strings.TrimPrefix(cleanPath, "/received_images/")
-	if relPath == cleanPath {
-		http.Error(w, "invalid path prefix", http.StatusBadRequest)
-		return
+
+	// 统一转换为正斜杠处理
+	normalized := filepath.ToSlash(decodedPath)
+	cleanPath := filepath.Clean(normalized)
+	cleanPath = filepath.ToSlash(cleanPath)
+
+	// 提取 relative path
+	var relPath string
+	if strings.HasPrefix(cleanPath, "/received_images/") {
+		relPath = strings.TrimPrefix(cleanPath, "/received_images/")
+	} else if strings.HasPrefix(cleanPath, "received_images/") {
+		relPath = strings.TrimPrefix(cleanPath, "received_images/")
+	} else {
+		// 尝试查找 received_images 后的部分
+		parts := strings.Split(cleanPath, "/")
+		for i, part := range parts {
+			if part == "received_images" && i+1 < len(parts) {
+				relPath = strings.Join(parts[i+1:], "/")
+				break
+			}
+		}
+		if relPath == "" {
+			http.Error(w, "invalid path", http.StatusBadRequest)
+			return
+		}
 	}
-	absPath := filepath.Join(a.uploadDir, relPath)
-	// 安全检查：确保路径在 uploadDir 内
+
+	absPath := filepath.Join(a.uploadDir, filepath.FromSlash(relPath))
 	if !strings.HasPrefix(absPath, a.uploadDir+string(os.PathSeparator)) {
 		http.Error(w, "invalid path", http.StatusForbidden)
 		return
 	}
 
-	// 读取图片并转换为PNG写入剪贴板
 	data, err := os.ReadFile(absPath)
 	if err != nil {
-		log.Printf("读取图片失败: %v", err)
+		log.Printf("复制图片：读取文件失败 %v", err)
 		http.Error(w, "read failed", http.StatusInternalServerError)
 		return
 	}
+
+	// JPEG -> PNG 转换
 	img, err := jpeg.Decode(bytes.NewReader(data))
 	if err != nil {
-		log.Printf("JPEG解码失败: %v", err)
+		log.Printf("复制图片：JPEG解码失败 %v", err)
 		http.Error(w, "decode failed", http.StatusInternalServerError)
 		return
 	}
 	var pngBuf bytes.Buffer
 	if err := png.Encode(&pngBuf, img); err != nil {
-		log.Printf("PNG编码失败: %v", err)
+		log.Printf("复制图片：PNG编码失败 %v", err)
 		http.Error(w, "encode failed", http.StatusInternalServerError)
 		return
 	}
+
 	if err := clipboard.Write(clipboard.FmtImage, pngBuf.Bytes()); err != nil {
-		log.Printf("写入剪贴板返回 (可能无关错误): %v", err)
+		log.Printf("复制图片：写入剪贴板错误 %v", err)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -373,6 +439,7 @@ func (a *App) handleClients(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(clientsList)
 }
 
+// handleDeleteImage 处理图片删除请求
 func (a *App) handleDeleteImage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -383,29 +450,49 @@ func (a *App) handleDeleteImage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing path", http.StatusBadRequest)
 		return
 	}
+
 	decodedPath, err := url.PathUnescape(path)
 	if err != nil {
 		http.Error(w, "invalid path encoding", http.StatusBadRequest)
 		return
 	}
-	cleanPath := filepath.Clean(decodedPath)
-	// 去掉 /received_images/ 前缀
-	relPath := strings.TrimPrefix(cleanPath, "/received_images/")
-	if relPath == cleanPath {
-		http.Error(w, "invalid path prefix", http.StatusBadRequest)
-		return
+	// 统一转换为正斜杠处理
+	normalized := filepath.ToSlash(decodedPath)
+	cleanPath := filepath.Clean(normalized)
+	cleanPath = filepath.ToSlash(cleanPath)
+
+	// 提取相对路径
+	var relPath string
+	if strings.HasPrefix(cleanPath, "/received_images/") {
+		relPath = strings.TrimPrefix(cleanPath, "/received_images/")
+	} else if strings.HasPrefix(cleanPath, "received_images/") {
+		relPath = strings.TrimPrefix(cleanPath, "received_images/")
+	} else {
+		parts := strings.Split(cleanPath, "/")
+		for i, part := range parts {
+			if part == "received_images" && i+1 < len(parts) {
+				relPath = strings.Join(parts[i+1:], "/")
+				break
+			}
+		}
+		if relPath == "" {
+			http.Error(w, "invalid path", http.StatusBadRequest)
+			return
+		}
 	}
-	absPath := filepath.Join(a.uploadDir, relPath)
-	// 安全检查
+
+	absPath := filepath.Join(a.uploadDir, filepath.FromSlash(relPath))
 	if !strings.HasPrefix(absPath, a.uploadDir+string(os.PathSeparator)) {
 		http.Error(w, "invalid path", http.StatusForbidden)
 		return
 	}
+
 	if err := os.Remove(absPath); err != nil {
-		log.Printf("删除文件失败: %v", err)
+		log.Printf("删除图片失败: %v", err)
 		http.Error(w, "delete failed", http.StatusInternalServerError)
 		return
 	}
+	// 从内存中移除记录
 	a.imagesMutex.Lock()
 	defer a.imagesMutex.Unlock()
 	for i, img := range a.images {
@@ -496,14 +583,48 @@ func (a *App) cleanOldClients() {
 
 // ---------- 辅助函数 ----------
 func getLocalIP() string {
-	addrs, err := net.InterfaceAddrs()
+	// 获取所有网络接口
+	interfaces, err := net.Interfaces()
 	if err != nil {
 		return ""
 	}
-	for _, addr := range addrs {
-		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-			return ipnet.IP.String()
+
+	// 首选：非回环、非 APIPA、有默认网关的 IPv4 地址
+	var candidates []string
+
+	for _, iface := range interfaces {
+		// 跳过未运行或环回接口
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			ipnet, ok := addr.(*net.IPNet)
+			if !ok || ipnet.IP.IsLoopback() {
+				continue
+			}
+			ipv4 := ipnet.IP.To4()
+			if ipv4 == nil {
+				continue
+			}
+			// 排除 APIPA 地址 (169.254.0.0/16)
+			if ipv4[0] == 169 && ipv4[1] == 254 {
+				continue
+			}
+			candidates = append(candidates, ipv4.String())
 		}
 	}
-	return ""
+
+	if len(candidates) == 0 {
+		return ""
+	}
+
+	// 进一步筛选：优先选择能与默认网关通信的 IP（通过检查路由表）
+	// 简单起见，返回第一个非 APIPA 地址（通常这就是正确的局域网 IP）
+	// 如果需要更精确，可以尝试 ping 网关，但会增加延迟，不推荐。
+	// 这里直接返回第一个候选地址
+	return candidates[0]
 }
