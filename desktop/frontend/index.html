@@ -30,7 +30,37 @@
         .client-time { color: #64748b; }
         .empty-clients { color: #94a3b8; padding: 16px; text-align: center; }
         .image-group { margin-bottom: 20px; border-bottom: 1px solid #e9eef3; }
-        .group-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 8px 4px; }
+        .group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 8px 4px;
+        }
+        .group-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .group-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .group-select-all {
+            accent-color: #3b82f6;
+            cursor: pointer;
+            width: 14px;
+            height: 14px;
+        }
+        .group-select-all-label {
+            font-size: 12px;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
         .group-title { font-size: 14px; font-weight: 500; background: #eef2ff; padding: 4px 12px; border-radius: 24px; color: #1e40af; }
         .toggle-icon { font-size: 14px; color: #64748b; width: 20px; text-align: center; }
         .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 8px; margin-bottom: 16px; }
@@ -81,7 +111,6 @@
             gap: 8px;
             z-index: 2;
         }
-        /* 调整颜色：更醒目的白色，加强阴影 */
         .copy-btn, .delete-btn {
             color: rgba(255, 255, 255, 0.95);
             font-size: 18px;
@@ -117,7 +146,6 @@
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 40px; font-size: 14px; z-index: 10001; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
         @media (max-width: 768px) { .two-columns { flex-direction: column; } .image-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); } }
 
-        /* 图片预览模态框 */
         .image-preview-overlay {
             position: fixed;
             top: 0;
@@ -259,33 +287,62 @@
             let html = '';
             for (const [tag, images] of Object.entries(groups)) {
                 const groupId = `group_${Date.now()}_${tag.replace(/[^a-zA-Z0-9]/g, '_')}`;
-                html += `<div class="image-group"><div class="group-header" data-group="${groupId}"><span class="group-title">🏷️ ${tag}</span><span class="toggle-icon">▼</span></div><div class="image-grid" id="${groupId}">`;
-                images.forEach(img => {
-                    html += `<div class="image-card">
-                        <input type="checkbox" class="image-checkbox" data-relpath="${img.url.replace('/received_images/', '')}" />
-                        <div class="image-actions">
-                            <div class="copy-btn" data-url="${API_BASE}${img.url}"><i class="fa-regular fa-copy"></i></div>
-                            <div class="delete-btn" data-url="${img.url}"><i class="fa-regular fa-trash-can"></i></div>
+                html += `<div class="image-group">
+                    <div class="group-header" data-group="${groupId}">
+                        <div class="group-header-left">
+                            <span class="group-title">🏷️ ${tag}</span>
                         </div>
-                        <img src="${API_BASE}${img.url}" loading="lazy">
-                        <div class="image-info">🕒 ${new Date(img.uploadTime).toLocaleTimeString()}</div>
-                    </div>`;
-                });
-                html += `</div></div>`;
+                        <div class="group-header-right">
+                            <span class="toggle-icon">▼</span>
+                            <label class="group-select-all-label">
+                                <input type="checkbox" class="group-select-all" data-group="${groupId}" /> 全选
+                            </label>
+                        </div>
+                    </div>
+                    <div class="image-grid" id="${groupId}">
+                        ${images.map(img => `
+                            <div class="image-card">
+                                <input type="checkbox" class="image-checkbox" data-relpath="${img.url.replace('/received_images/', '')}" />
+                                <div class="image-actions">
+                                    <div class="copy-btn" data-url="${API_BASE}${img.url}"><i class="fa-regular fa-copy"></i></div>
+                                    <div class="delete-btn" data-url="${img.url}"><i class="fa-regular fa-trash-can"></i></div>
+                                </div>
+                                <img src="${API_BASE}${img.url}" loading="lazy">
+                                <div class="image-info">🕒 ${new Date(img.uploadTime).toLocaleTimeString()}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
             }
             container.innerHTML = html;
 
+            // 绑定折叠事件（排除全选复选框）
             document.querySelectorAll('.group-header').forEach(header => {
                 const groupId = header.getAttribute('data-group');
                 const grid = document.getElementById(groupId);
                 const iconSpan = header.querySelector('.toggle-icon');
                 let collapsed = false;
-                header.onclick = () => {
+                header.addEventListener('click', function(e) {
+                    // 如果点击的是全选复选框或其标签，不触发折叠
+                    if (e.target.closest('.group-select-all, .group-select-all-label')) return;
                     collapsed = !collapsed;
                     grid.classList.toggle('collapsed', collapsed);
                     iconSpan.textContent = collapsed ? '▶' : '▼';
-                };
+                });
             });
+
+            // 绑定全选事件
+            document.querySelectorAll('.group-select-all').forEach(checkbox => {
+                checkbox.addEventListener('change', function(e) {
+                    e.stopPropagation();
+                    const groupId = this.getAttribute('data-group');
+                    const grid = document.getElementById(groupId);
+                    const imageCheckboxes = grid.querySelectorAll('.image-checkbox');
+                    imageCheckboxes.forEach(cb => cb.checked = this.checked);
+                });
+            });
+
+            // 绑定复制和删除事件
             document.querySelectorAll('.copy-btn').forEach(btn => { btn.onclick = (e) => { e.stopPropagation(); const url = btn.getAttribute('data-url'); if (url) copyImageToClipboard(url); }; });
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.onclick = async (e) => {
@@ -311,14 +368,13 @@
     }
     function refresh() { loadClients(); loadImages(); }
 
-    // 图片点击放大预览
     function setupImagePreview() {
         const container = document.getElementById('imagesContainer');
         if (!container) return;
         container.addEventListener('click', function(e) {
             const img = e.target.closest('.image-card img');
             if (!img) return;
-            if (e.target.closest('.image-checkbox, .image-actions')) return;
+            if (e.target.closest('.image-checkbox, .image-actions, .group-select-all, .group-select-all-label')) return;
             const src = img.getAttribute('src');
             if (!src) return;
             const overlay = document.createElement('div');
