@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>拍瞬传 · 服务端</title>
+    <link rel="stylesheet" href="static/fontawesome/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f5f7fb; padding: 20px; color: #1e293b; }
@@ -12,14 +13,16 @@
         h1 img { height: 36px; width: auto; }
         .card { background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding: 24px; margin-bottom: 24px; }
         .two-columns { display: flex; flex-wrap: wrap; gap: 30px; }
-        .qr-column { flex: 1; min-width: 280px; display: flex; justify-content: space-around; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .qr-column { flex: 1; min-width: 280px; display: flex; justify-content: space-around; align-items: center; gap: 10px; flex-wrap: wrap; }
         .qr-item { text-align: center; flex: 1; }
         .qr-box { background: white; padding: 12px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: inline-block; }
+        .qr-box img { width: 120px; height: 120px; }
         .qr-tip { margin-top: 8px; font-size: 12px; color: #475569; }
-        .info-column { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 20px; }
-        .button-group { display: flex; gap: 12px; }
-        .open-dir-btn, .refresh-btn, .open-log-btn { background: #f1f5f9; border: none; border-radius: 40px; padding: 10px 16px; font-size: 0.9rem; cursor: pointer; flex: 1; text-align: center; transition: background 0.2s; }
-        .open-dir-btn:hover, .refresh-btn:hover, .open-log-btn:hover { background: #e2e8f0; }
+        .info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 20px; }
+        .button-group { display: flex; gap: 12px; flex-wrap: wrap; }
+        .button-group button { font-size: 12px; padding: 6px 10px; white-space: nowrap; }
+        .open-dir-btn, .refresh-btn, .open-log-btn, .export-btn { background: #f1f5f9; border: none; border-radius: 40px; padding: 10px 16px; font-size: 0.9rem; cursor: pointer; flex: 1; text-align: center; transition: background 0.2s; min-width: 60px; }
+        .open-dir-btn:hover, .refresh-btn:hover, .open-log-btn:hover, .export-btn:hover { background: #e2e8f0; }
         .setting-item { background: #f8fafc; border-radius: 16px; padding: 10px 12px; font-size: 0.85rem; text-align: center; }
         .client-list { background: #f8fafc; border-radius: 16px; padding: 12px; max-height: 240px; overflow-y: auto; }
         .client-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
@@ -32,12 +35,76 @@
         .toggle-icon { font-size: 14px; color: #64748b; width: 20px; text-align: center; }
         .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 8px; margin-bottom: 16px; }
         .image-grid.collapsed { display: none; }
-        .image-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: relative; border: 1px solid #e9eef3; }
-        .image-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; }
-        .image-info { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); color: white; padding: 4px 6px; font-size: 10px; text-align: center; }
-        .image-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 6px; z-index: 2; }
-        .copy-btn, .delete-btn { background: rgba(0,0,0,0.6); border-radius: 20px; padding: 4px 8px; color: white; cursor: pointer; transition: background 0.2s; font-size: 12px; }
-        .copy-btn:hover, .delete-btn:hover { background: rgba(0,0,0,0.8); }
+        .image-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
+            border: 1px solid #e9eef3;
+            aspect-ratio: 1 / 1;
+            cursor: pointer;
+        }
+        .image-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            background: #f0f0f0;
+        }
+        .image-checkbox {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 20px;
+            height: 20px;
+            z-index: 3;
+            accent-color: #3b82f6;
+            cursor: pointer;
+            background: rgba(255,255,255,0.7);
+            border-radius: 4px;
+            appearance: auto;
+            -webkit-appearance: auto;
+            border: 1px solid rgba(0,0,0,0.3);
+            padding: 0;
+            margin: 0;
+        }
+        .image-checkbox:checked {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+        .image-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 8px;
+            z-index: 2;
+        }
+        /* 调整颜色：更醒目的白色，加强阴影 */
+        .copy-btn, .delete-btn {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 18px;
+            cursor: pointer;
+            transition: color 0.2s;
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+            line-height: 1;
+        }
+        .copy-btn:hover, .delete-btn:hover {
+            color: #ffffff;
+        }
+        .image-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            color: white;
+            padding: 4px 6px;
+            font-size: 10px;
+            text-align: center;
+        }
         .empty-state { text-align: center; padding: 40px; color: #94a3b8; }
         footer { text-align: center; margin-top: 40px; color: #94a3b8; }
         .confirm-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
@@ -49,6 +116,42 @@
         .confirm-buttons .cancel-btn { background: #e2e8f0; color: #334155; }
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 40px; font-size: 14px; z-index: 10001; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
         @media (max-width: 768px) { .two-columns { flex-direction: column; } .image-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); } }
+
+        /* 图片预览模态框 */
+        .image-preview-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10002;
+            cursor: pointer;
+        }
+        .image-preview-overlay img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .image-preview-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 40px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0,0,0,0.7);
+            transition: transform 0.2s;
+        }
+        .image-preview-close:hover {
+            transform: scale(1.2);
+        }
     </style>
 </head>
 <body>
@@ -76,11 +179,12 @@
             <div class="info-column">
                 <div class="button-group">
                     <button class="open-dir-btn" id="openDirBtn">📂 图片目录</button>
-                    <button class="refresh-btn" id="refreshBtn">🔄 手动刷新</button>
+                    <button class="export-btn" id="exportPdfBtn">📄 导出PDF</button>
+                    <button class="refresh-btn" id="refreshBtn">🔄 刷新</button>
                     <button class="open-log-btn" id="openLogBtn">📄 日志文件</button>
                 </div>
                 <div class="setting-item">
-                    <label><input type="checkbox" id="autoCopyCheckbox"> 📋 接收后自动复制图片到剪贴板</label>
+                    <label><input type="checkbox" id="autoCopyCheckbox"> 📋 接收后自动复制</label>
                 </div>
                 <div class="client-list">
                     <h3 style="font-size: 1rem; margin-bottom: 10px;">👥 连接的客户端</h3>
@@ -158,9 +262,10 @@
                 html += `<div class="image-group"><div class="group-header" data-group="${groupId}"><span class="group-title">🏷️ ${tag}</span><span class="toggle-icon">▼</span></div><div class="image-grid" id="${groupId}">`;
                 images.forEach(img => {
                     html += `<div class="image-card">
+                        <input type="checkbox" class="image-checkbox" data-relpath="${img.url.replace('/received_images/', '')}" />
                         <div class="image-actions">
-                            <div class="copy-btn" data-url="${API_BASE}${img.url}">📋</div>
-                            <div class="delete-btn" data-url="${img.url}">🗑️</div>
+                            <div class="copy-btn" data-url="${API_BASE}${img.url}"><i class="fa-regular fa-copy"></i></div>
+                            <div class="delete-btn" data-url="${img.url}"><i class="fa-regular fa-trash-can"></i></div>
                         </div>
                         <img src="${API_BASE}${img.url}" loading="lazy">
                         <div class="image-info">🕒 ${new Date(img.uploadTime).toLocaleTimeString()}</div>
@@ -205,6 +310,39 @@
         if (qrImg) qrImg.src = API_BASE + '/qrcode?t=' + Date.now();
     }
     function refresh() { loadClients(); loadImages(); }
+
+    // 图片点击放大预览
+    function setupImagePreview() {
+        const container = document.getElementById('imagesContainer');
+        if (!container) return;
+        container.addEventListener('click', function(e) {
+            const img = e.target.closest('.image-card img');
+            if (!img) return;
+            if (e.target.closest('.image-checkbox, .image-actions')) return;
+            const src = img.getAttribute('src');
+            if (!src) return;
+            const overlay = document.createElement('div');
+            overlay.className = 'image-preview-overlay';
+            overlay.innerHTML = `
+                <div class="image-preview-close">&times;</div>
+                <img src="${src}" alt="预览">
+            `;
+            document.body.appendChild(overlay);
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay || e.target.classList.contains('image-preview-close')) {
+                    overlay.remove();
+                }
+            });
+            const escHandler = function(e) {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                    document.removeEventListener('keydown', escHandler);
+                }
+            };
+            document.addEventListener('keydown', escHandler);
+        });
+    }
+
     async function initAPI() {
         if (window.go && window.go.main && window.go.main.App) {
             const port = await window.go.main.App.GetHTTPPort();
@@ -213,32 +351,19 @@
             loadQR();
             refresh();
             setupAutoRefresh();
+            setupImagePreview();
             document.getElementById('openDirBtn').onclick = async () => {
                 const resp = await fetch(API_BASE + '/open-dir');
                 const data = await resp.json();
                 showToast(data.success ? '📂 已打开图片目录' : '❌ 打开失败', !data.success);
             };
-
-            document.getElementById('openLogBtn').addEventListener('click', async () => {
-                try {
-                    const response = await fetch(API_BASE + '/open-log');
-                    const data = await response.json();
-                    if (data.success) {
-                        showToast('📄 已打开日志文件所在位置');
-                    } else {
-                        showToast('❌ 打开日志文件失败', true);
-                    }
-                } catch (err) {
-                    console.error(err);
-                    showToast('❌ 请求失败', true);
-                }
-            });
         } else {
             console.warn('Wails runtime not available, fallback to 5000');
             API_BASE = 'http://localhost:5000';
             loadQR();
             refresh();
             setupAutoRefresh();
+            setupImagePreview();
         }
     }
     function setupAutoRefresh() {
@@ -258,6 +383,55 @@
             }, 200);
         }
     }
+
+    document.getElementById('exportPdfBtn').addEventListener('click', async () => {
+        const checked = document.querySelectorAll('.image-checkbox:checked');
+        const paths = Array.from(checked).map(cb => cb.dataset.relpath);
+        if (paths.length === 0) {
+            showToast('请至少选择一张图片', true);
+            return;
+        }
+        try {
+            const response = await fetch(API_BASE + '/api/pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paths })
+            });
+            if (!response.ok) {
+                const text = await response.text();
+                showToast('导出失败：' + text, true);
+                return;
+            }
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '拍瞬传-合并.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+            showToast('✅ PDF已生成并下载');
+        } catch (err) {
+            console.error(err);
+            showToast('导出请求失败', true);
+        }
+    });
+
+    document.getElementById('openLogBtn').addEventListener('click', async () => {
+        try {
+            const response = await fetch(API_BASE + '/open-log');
+            const data = await response.json();
+            if (data.success) {
+                showToast('📄 已打开日志文件所在位置');
+            } else {
+                showToast('❌ 打开日志文件失败', true);
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('❌ 请求失败', true);
+        }
+    });
+
     const autoCopyCheckbox = document.getElementById('autoCopyCheckbox');
     autoCopyCheckbox.checked = false;
     autoCopyCheckbox.addEventListener('change', async (e) => {
@@ -270,7 +444,7 @@
         } catch (err) { showToast('❌ 网络错误，设置失败', true); autoCopyCheckbox.checked = !enabled; }
     });
     document.getElementById('refreshBtn').onclick = () => refresh();
-   // document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
+    document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
     initAPI();
 </script>
 </body>

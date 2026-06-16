@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"image"
 	"image/jpeg"
 	"image/png"
 	"io"
@@ -24,6 +25,8 @@ import (
 	"github.com/skip2/go-qrcode"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.design/x/clipboard"
+
+	"github.com/signintech/gopdf"
 )
 
 // ---------- 数据结构 ----------
@@ -57,6 +60,8 @@ type App struct {
 	autoCopy bool // 是否自动复制到剪贴板
 
 	logFilePath string
+
+	pdfDir string // PDF输出目录
 }
 
 // ---------- 构造函数 ----------
@@ -110,6 +115,14 @@ func (a *App) startup(ctx context.Context) {
 		log.Println("===== 应用启动 =====")
 	}
 
+	// 初始化PDF输出目录（用户家目录下的“拍瞬传PDF”）
+	if err == nil {
+		a.pdfDir = filepath.Join(home, "拍瞬传PDF")
+		if err := os.MkdirAll(a.pdfDir, 0755); err != nil {
+			log.Printf("创建PDF目录失败: %v", err)
+		}
+	}
+
 	// 查找可用端口
 	port := findAvailablePort(5000)
 	if port == 0 {
@@ -145,6 +158,7 @@ func (a *App) startHTTPServer() {
 	mux.HandleFunc("/qrcode", a.handleQRCode)
 	mux.HandleFunc("/open-dir", a.handleOpenDir)
 	mux.HandleFunc("/open-log", a.handleOpenLog)
+	mux.HandleFunc("/api/pdf", a.handleGeneratePDF)
 
 	// 静态文件服务（嵌入或外部目录，只读）
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -182,6 +196,55 @@ func corsMiddleware(next http.Handler) http.Handler {
 }
 
 // ---------- 业务处理 ----------
+
+func (a *App) handleGeneratePDF(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Paths []string `json:"paths"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+	if len(req.Paths) == 0 {
+		http.Error(w, "No images selected", http.StatusBadRequest)
+		return
+	}
+
+	// 生成PDF
+	outputPath, err := a.generatePDF(req.Paths)
+	if err != nil {
+		log.Printf("PDF生成失败: %v", err)
+		http.Error(w, "PDF generation failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// 打开目录（异步）
+	go func() {
+		var cmd *exec.Cmd
+		switch runtime.GOOS {
+		case "windows":
+			cmd = exec.Command("explorer", "/select,", outputPath)
+		case "darwin":
+			cmd = exec.Command("open", "-R", outputPath)
+		case "linux":
+			cmd = exec.Command("xdg-open", filepath.Dir(outputPath))
+		}
+		if cmd != nil {
+			if err := cmd.Start(); err != nil {
+				log.Printf("打开目录失败: %v", err)
+			}
+		}
+	}()
+
+	// 返回PDF文件流
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filepath.Base(outputPath)))
+	http.ServeFile(w, r, outputPath)
+}
 
 func (a *App) handleOpenLog(w http.ResponseWriter, r *http.Request) {
 	if a.logFilePath == "" {
@@ -582,6 +645,83 @@ func (a *App) cleanOldClients() {
 }
 
 // ---------- 辅助函数 ----------
+func (a *App) generatePDF(relPaths []string) (string, error) {
+	log.Printf("generatePDF 开始，路径列表: %v", relPaths)
+	if len(relPaths) == 0 {
+		return "", fmt.Errorf("no images provided")
+	}
+
+	var absPaths []string
+	for _, rel := range relPaths {
+		abs := filepath.Join(a.uploadDir, rel)
+		if _, err := os.Stat(abs); err == nil {
+			absPaths = append(absPaths, abs)
+		} else {
+			log.Printf("图片不存在: %s", abs)
+		}
+	}
+	if len(absPaths) == 0 {
+		return "", fmt.Errorf("no valid images found")
+	}
+
+	pdf := &gopdf.GoPdf{}
+	pdf.Start(gopdf.Config{PageSize: gopdf.Rect{W: 595.28, H: 841.89}}) // A4
+
+	for i, absPath := range absPaths {
+		pdf.AddPage()
+		// 获取图片尺寸
+		file, err := os.Open(absPath)
+		if err != nil {
+			log.Printf("打开图片失败: %v", err)
+			continue
+		}
+		config, _, err := image.DecodeConfig(file)
+		file.Close()
+		if err != nil {
+			log.Printf("解码图片尺寸失败: %v", err)
+			continue
+		}
+		w := float64(config.Width)
+		h := float64(config.Height)
+		if w <= 0 || h <= 0 {
+			log.Printf("无效图片尺寸: w=%.2f, h=%.2f", w, h)
+			continue
+		}
+		// 缩放至页面宽度（左右边距各50，可用宽度495）
+		targetWidth := 495.0
+		scale := targetWidth / w
+		targetHeight := h * scale
+		// 如果高度超过页面高度（留上下边距各50，可用高度约742），则继续缩放
+		maxHeight := 742.0
+		if targetHeight > maxHeight {
+			scale = maxHeight / h
+			targetWidth = w * scale
+			targetHeight = maxHeight
+		}
+		// 居中对齐
+		x := (595.28 - targetWidth) / 2
+		y := (841.89 - targetHeight) / 2
+		rect := gopdf.Rect{W: targetWidth, H: targetHeight}
+		log.Printf("插入图片 [%d/%d]: %s, 尺寸: %.2fx%.2f, 位置: %.2f, %.2f", i+1, len(absPaths), absPath, targetWidth, targetHeight, x, y)
+		if err := pdf.Image(absPath, x, y, &rect); err != nil {
+			log.Printf("插入图片失败: %v", err)
+			continue
+		}
+	}
+
+	// 确保PDF目录存在
+	if err := os.MkdirAll(a.pdfDir, 0755); err != nil {
+		return "", fmt.Errorf("创建PDF目录失败: %v", err)
+	}
+	timestamp := time.Now().Format("20060102-150405")
+	fileName := fmt.Sprintf("拍瞬传-%s.pdf", timestamp)
+	outputPath := filepath.Join(a.pdfDir, fileName)
+	if err := pdf.WritePdf(outputPath); err != nil {
+		return "", fmt.Errorf("write PDF failed: %v", err)
+	}
+	return outputPath, nil
+}
+
 func getLocalIP() string {
 	// 获取所有网络接口
 	interfaces, err := net.Interfaces()
