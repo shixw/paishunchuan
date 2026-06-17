@@ -6,16 +6,9 @@
     <title>拍瞬传 · 服务端</title>
     <link rel="stylesheet" href="static/fontawesome/css/all.min.css">
     <style>
-        /* 样式完全同上，省略重复，实际文件会包含完整样式 */
+        /* 原有样式不变，省略... 实际文件会包含完整样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
-        body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #f0f2f5;
-            padding: 20px;
-            color: #1e293b;
-            height: 100vh;
-            overflow: hidden;
-        }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #1e293b; height: 100vh; overflow: hidden; }
         .container { max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; height: 100%; }
         .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 20px; flex-shrink: 0; }
         .header-left { display: flex; align-items: center; gap: 12px; }
@@ -68,8 +61,12 @@
         .image-preview-close { position: absolute; top: 20px; right: 30px; font-size: 40px; color: white; cursor: pointer; font-weight: bold; text-shadow: 0 0 10px rgba(0,0,0,0.7); transition: transform 0.2s; }
         .image-preview-close:hover { transform: scale(1.2); }
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 40px; font-size: 14px; z-index: 10001; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
-        .confirm-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
-        .confirm-box { background: white; border-radius: 20px; padding: 24px; width: 280px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .confirm-overlay, .about-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+        .confirm-box, .about-box { background: white; border-radius: 20px; padding: 24px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .about-box h2 { margin-bottom: 16px; }
+        .about-box .info { margin-bottom: 8px; color: #475569; font-size: 0.9rem; }
+        .about-box .link { color: #3b82f6; text-decoration: none; }
+        .about-box .link:hover { text-decoration: underline; }
         .confirm-box p { margin-bottom: 24px; font-size: 16px; }
         .confirm-buttons { display: flex; gap: 12px; justify-content: center; }
         .confirm-buttons button { padding: 8px 20px; border-radius: 40px; border: none; cursor: pointer; }
@@ -81,7 +78,6 @@
 </head>
 <body>
 <div class="container">
-    <!-- 顶部标题栏 -->
     <header class="header">
         <div class="header-left">
             <img src="static/logo.png" alt="拍瞬传 Logo">
@@ -92,14 +88,13 @@
             <button class="header-btn" id="exportPdfBtn"><i class="fa-regular fa-file-pdf"></i> 导出PDF</button>
             <button class="header-btn" id="refreshBtn"><i class="fa-regular fa-rotate"></i> 刷新</button>
             <button class="header-btn" id="openLogBtn"><i class="fa-regular fa-file-lines"></i> 日志文件</button>
+            <!-- 新增“关于”按钮 -->
+            <button class="header-btn" id="aboutBtn"><i class="fa-regular fa-circle-question"></i> 关于</button>
         </div>
     </header>
 
-    <!-- 主体 -->
     <div class="main-layout">
-        <!-- 左侧边栏 -->
         <aside class="left-sidebar">
-            <!-- 二维码 -->
             <div class="sidebar-section">
                 <div class="sidebar-section-title">二维码</div>
                 <div class="qr-row">
@@ -113,14 +108,10 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 连接的客户端 -->
             <div class="sidebar-section">
                 <div class="sidebar-section-title">连接的客户端</div>
                 <div id="clientList" class="client-list">加载中...</div>
             </div>
-
-            <!-- 设置 -->
             <div class="sidebar-section">
                 <div class="sidebar-section-title">设置</div>
                 <div class="setting-item">
@@ -129,8 +120,6 @@
                 </div>
             </div>
         </aside>
-
-        <!-- 右侧主内容 -->
         <main class="right-content">
             <div class="right-header">
                 <h2><i class="fa-regular fa-images"></i> 已接收图片</h2>
@@ -140,10 +129,10 @@
     </div>
 </div>
 
-<!-- Toast 容器 -->
 <div class="toast" id="toast"></div>
 
 <script>
+    // ----- 完整功能与之前相同，仅新增“关于”功能 -----
     let API_BASE = '';
 
     function showToast(msg, isError = false) {
@@ -176,6 +165,32 @@
             cancelBtn.onclick = () => { cleanup(); resolve(false); };
             overlay.onclick = (e) => { if (e.target === overlay) { cleanup(); resolve(false); } };
         });
+    }
+
+    // 新增：关于弹窗
+    function showAbout() {
+        const overlay = document.createElement('div');
+        overlay.className = 'about-overlay';
+        overlay.innerHTML = `
+            <div class="about-box">
+                <h2>📸 拍瞬传</h2>
+                <div class="info">版本 v3.0.0</div>
+                <div class="info">备案号：京ICP备2026034358号</div>
+                <div class="info">
+                    项目主页：
+                    <a class="link" href="https://github.com/shixw/paishunchuan" target="_blank">https://github.com/shixw/paishunchuan</a>
+                </div>
+                <div class="info" style="margin-top:12px; font-size:0.8rem; color:#94a3b8;">
+                    纯局域网工具 · 数据不上传云端
+                </div>
+                <div class="confirm-buttons" style="margin-top:20px;">
+                    <button class="confirm-btn" id="aboutClose">关闭</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.querySelector('#aboutClose').onclick = () => overlay.remove();
+        overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     }
 
     async function copyImageToClipboard(imageUrl) {
@@ -255,7 +270,6 @@
             }
             container.innerHTML = html;
 
-            // 折叠/展开
             document.querySelectorAll('.group-header').forEach(header => {
                 const groupId = header.getAttribute('data-group');
                 const grid = document.getElementById(groupId);
@@ -269,7 +283,6 @@
                 });
             });
 
-            // 全选
             document.querySelectorAll('.group-select-all').forEach(checkbox => {
                 checkbox.addEventListener('change', function(e) {
                     e.stopPropagation();
@@ -280,7 +293,6 @@
                 });
             });
 
-            // 复制
             document.querySelectorAll('.copy-btn').forEach(btn => {
                 btn.onclick = (e) => {
                     e.stopPropagation();
@@ -289,7 +301,6 @@
                 };
             });
 
-            // 删除
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.onclick = async (e) => {
                     e.stopPropagation();
@@ -359,7 +370,6 @@
             const port = await window.go.main.App.GetHTTPPort();
             API_BASE = `http://localhost:${port}`;
             console.log('API_BASE:', API_BASE);
-            // 小程序码图片使用相对路径，无需动态设置
             loadQR();
             refresh();
             setupAutoRefresh();
@@ -415,6 +425,8 @@
                     showToast('❌ 请求失败', true);
                 }
             };
+            // 关于按钮
+            document.getElementById('aboutBtn').onclick = showAbout;
         } else {
             console.warn('Wails runtime not available, fallback to 5000');
             API_BASE = 'http://localhost:5000';
@@ -422,7 +434,7 @@
             refresh();
             setupAutoRefresh();
             setupImagePreview();
-            // 同样绑定按钮（降级）
+            // 降级绑定
             document.getElementById('openDirBtn').onclick = async () => {
                 const resp = await fetch(API_BASE + '/open-dir');
                 const data = await resp.json();
@@ -474,6 +486,7 @@
                     showToast('❌ 请求失败', true);
                 }
             };
+            document.getElementById('aboutBtn').onclick = showAbout;
         }
     }
 
@@ -495,7 +508,6 @@
         }
     }
 
-    // 自动复制开关
     const autoCopyCheckbox = document.getElementById('autoCopyCheckbox');
     autoCopyCheckbox.checked = false;
     autoCopyCheckbox.addEventListener('change', async (e) => {
@@ -519,10 +531,7 @@
         }
     });
 
-    // 刷新按钮
     document.getElementById('refreshBtn').onclick = () => refresh();
-
-    // 禁用右键菜单
     document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
 
     initAPI();
