@@ -6,7 +6,6 @@
     <title>拍瞬传 · 服务端</title>
     <link rel="stylesheet" href="static/fontawesome/css/all.min.css">
     <style>
-        /* 原有样式不变，省略... 实际文件会包含完整样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #1e293b; height: 100vh; overflow: hidden; }
         .container { max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; height: 100%; }
@@ -62,12 +61,16 @@
         .image-preview-close:hover { transform: scale(1.2); }
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 40px; font-size: 14px; z-index: 10001; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
         .confirm-overlay, .about-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
-        .confirm-box, .about-box { background: white; border-radius: 20px; padding: 24px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-        .about-box h2 { margin-bottom: 16px; }
-        .about-box .info { margin-bottom: 8px; color: #475569; font-size: 0.9rem; }
-        .about-box .link { color: #3b82f6; text-decoration: none; }
+        .confirm-box, .about-box { background: white; border-radius: 20px; padding: 24px; max-width: 560px; width: 90%; text-align: left; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .about-box h2 { text-align: center; margin-bottom: 12px; }
+        .about-box .info { margin-bottom: 8px; color: #475569; font-size: 0.9rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+        .about-box .link { color: #3b82f6; text-decoration: none; word-break: break-all; flex: 1; }
         .about-box .link:hover { text-decoration: underline; }
-        .confirm-box p { margin-bottom: 24px; font-size: 16px; }
+        .about-box .copy-link-btn { background: #f1f5f9; border: none; border-radius: 20px; padding: 2px 10px; font-size: 0.75rem; cursor: pointer; color: #1e293b; white-space: nowrap; }
+        .about-box .copy-link-btn:hover { background: #e2e8f0; }
+        .about-box .divider { border: none; border-top: 1px solid #e9eef3; margin: 12px 0; }
+        .about-box .footer-note { text-align: center; font-size: 0.8rem; color: #94a3b8; }
+        .confirm-box p { margin-bottom: 24px; font-size: 16px; text-align: center; }
         .confirm-buttons { display: flex; gap: 12px; justify-content: center; }
         .confirm-buttons button { padding: 8px 20px; border-radius: 40px; border: none; cursor: pointer; }
         .confirm-buttons .confirm-btn { background: #3b82f6; color: white; }
@@ -88,7 +91,6 @@
             <button class="header-btn" id="exportPdfBtn"><i class="fa-regular fa-file-pdf"></i> 导出PDF</button>
             <button class="header-btn" id="refreshBtn"><i class="fa-regular fa-rotate"></i> 刷新</button>
             <button class="header-btn" id="openLogBtn"><i class="fa-regular fa-file-lines"></i> 日志文件</button>
-            <!-- 新增“关于”按钮 -->
             <button class="header-btn" id="aboutBtn"><i class="fa-regular fa-circle-question"></i> 关于</button>
         </div>
     </header>
@@ -132,7 +134,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-    // ----- 完整功能与之前相同，仅新增“关于”功能 -----
     let API_BASE = '';
 
     function showToast(msg, isError = false) {
@@ -167,28 +168,73 @@
         });
     }
 
-    // 新增：关于弹窗
+    // 复制文本到剪贴板（通用）
+    function copyToClipboard(text, successMsg = '已复制到剪贴板') {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('✅ ' + successMsg);
+            }).catch(() => {
+                // 降级方案
+                fallbackCopy(text, successMsg);
+            });
+        } else {
+            fallbackCopy(text, successMsg);
+        }
+    }
+
+    function fallbackCopy(text, successMsg) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showToast('✅ ' + successMsg);
+        } catch (err) {
+            showToast('❌ 复制失败', true);
+        }
+        document.body.removeChild(textarea);
+    }
+
+    // 关于弹窗（已更新为 v3.0.0、京ICP备2026034358号、GitHub 和百度网盘信息）
     function showAbout() {
         const overlay = document.createElement('div');
         overlay.className = 'about-overlay';
         overlay.innerHTML = `
             <div class="about-box">
                 <h2>📸 拍瞬传</h2>
-                <div class="info">版本 v3.0.0</div>
-                <div class="info">备案号：京ICP备2026034358号</div>
+                <div class="info"><span>版本 v3.0.0</span></div>
+                <div class="info"><span>备案号：京ICP备2026034358号</span></div>
+                <hr class="divider">
                 <div class="info">
-                    项目主页：
-                    <a class="link" href="https://github.com/shixw/paishunchuan" target="_blank">https://github.com/shixw/paishunchuan</a>
+                    <span style="font-weight:500;">📦 GitHub：</span>
+                    <a class="link" href="https://github.com/shixw/paishunchuan/" target="_blank">https://github.com/shixw/paishunchuan/</a>
+                    <button class="copy-link-btn" data-link="https://github.com/shixw/paishunchuan/">复制</button>
                 </div>
-                <div class="info" style="margin-top:12px; font-size:0.8rem; color:#94a3b8;">
-                    纯局域网工具 · 数据不上传云端
+                <div class="info">
+                    <span style="font-weight:500;">☁️ 百度网盘：</span>
+                    <a class="link" href="https://pan.baidu.com/s/1wlCR9NL4ixBJV-YuRuthtw?pwd=ehcb" target="_blank">https://pan.baidu.com/s/1wlCR9NL4ixBJV-YuRuthtw?pwd=ehcb</a>
+                    <button class="copy-link-btn" data-link="https://pan.baidu.com/s/1wlCR9NL4ixBJV-YuRuthtw?pwd=ehcb">复制</button>
                 </div>
-                <div class="confirm-buttons" style="margin-top:20px;">
+                <hr class="divider">
+                <div class="footer-note">纯局域网工具 · 数据不上传云端</div>
+                <div class="confirm-buttons" style="margin-top:16px;">
                     <button class="confirm-btn" id="aboutClose">关闭</button>
                 </div>
             </div>
         `;
         document.body.appendChild(overlay);
+
+        // 绑定复制按钮事件
+        overlay.querySelectorAll('.copy-link-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const link = this.getAttribute('data-link');
+                if (link) copyToClipboard(link, '链接已复制');
+            });
+        });
+
+        // 关闭
         overlay.querySelector('#aboutClose').onclick = () => overlay.remove();
         overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     }
@@ -425,7 +471,6 @@
                     showToast('❌ 请求失败', true);
                 }
             };
-            // 关于按钮
             document.getElementById('aboutBtn').onclick = showAbout;
         } else {
             console.warn('Wails runtime not available, fallback to 5000');
@@ -434,7 +479,6 @@
             refresh();
             setupAutoRefresh();
             setupImagePreview();
-            // 降级绑定
             document.getElementById('openDirBtn').onclick = async () => {
                 const resp = await fetch(API_BASE + '/open-dir');
                 const data = await resp.json();
