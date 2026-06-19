@@ -27,6 +27,8 @@ import (
 	"golang.design/x/clipboard"
 
 	"github.com/signintech/gopdf"
+
+	"github.com/google/uuid"
 )
 
 // ---------- 数据结构 ----------
@@ -62,7 +64,16 @@ type App struct {
 	logFilePath string
 
 	pdfDir string // PDF输出目录
+
+	udpConn    *net.UDPConn
+	udpPort    int
+	udpReady   bool   // UDP 是否启动成功
+	deviceID   string // 设备唯一ID (UUID)
+	deviceName string // 设备友好名称
+	configPath string // 配置文件路径
 }
+
+const UDP_DISCOVERY_PORT = 19988
 
 // ---------- 构造函数 ----------
 func NewApp() *App {
@@ -93,6 +104,14 @@ func (a *App) startup(ctx context.Context) {
 	if err != nil {
 		log.Fatal("获取用户家目录失败:", err)
 	}
+
+	configDir := filepath.Join(home, ".paishunchuan")
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		log.Printf("创建配置目录失败: %v", err)
+	}
+	a.configPath = filepath.Join(configDir, "config.json")
+	a.loadOrGenerateDeviceInfo()
+
 	a.uploadDir = filepath.Join(home, "拍瞬传图片")
 	log.Printf("图片保存目录: %s", a.uploadDir)
 
@@ -131,6 +150,10 @@ func (a *App) startup(ctx context.Context) {
 	a.httpPort = port
 	log.Printf("HTTP 服务将使用端口: %d", a.httpPort)
 
+	// 4. 启动UDP发现服务（固定端口9988，失败不影响主流程）
+	a.udpPort = UDP_DISCOVERY_PORT
+	go a.startUDPDiscovery()
+
 	go a.startHTTPServer()
 	go a.cleanOldClients()
 }
@@ -159,6 +182,7 @@ func (a *App) startHTTPServer() {
 	mux.HandleFunc("/open-dir", a.handleOpenDir)
 	mux.HandleFunc("/open-log", a.handleOpenLog)
 	mux.HandleFunc("/api/pdf", a.handleGeneratePDF)
+	mux.HandleFunc("/api/device-info", a.handleDeviceInfo)
 
 	// 静态文件服务（嵌入或外部目录，只读）
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -607,6 +631,24 @@ func (a *App) handleOpenDir(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"success":true}`))
 }
 
+func (a *App) handleDeviceInfo(w http.ResponseWriter, r *http.Request) {
+	resp := struct {
+		DeviceID   string `json:"deviceID"`
+		DeviceName string `json:"deviceName"`
+		UDPReady   bool   `json:"udpReady"`
+		UDPError   string `json:"udpError,omitempty"`
+	}{
+		DeviceID:   a.deviceID,
+		DeviceName: a.deviceName,
+		UDPReady:   a.udpReady,
+	}
+	if !a.udpReady {
+		resp.UDPError = "UDP发现端口被占用，设备自动发现不可用"
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
 // ---------- 客户端跟踪 ----------
 func (a *App) recordClientActivity(r *http.Request) {
 	ip := r.RemoteAddr
@@ -640,6 +682,87 @@ func (a *App) cleanOldClients() {
 		for _, ip := range removed {
 			log.Printf("客户端不活跃: %s", ip)
 			wailsRuntime.EventsEmit(a.ctx, "clientInactive", ip)
+		}
+	}
+}
+
+func (a *App) loadOrGenerateDeviceInfo() {
+	type Config struct {
+		DeviceID   string `json:"deviceID"`
+		DeviceName string `json:"deviceName"`
+	}
+	var cfg Config
+
+	data, err := os.ReadFile(a.configPath)
+	if err == nil {
+		if err := json.Unmarshal(data, &cfg); err == nil && cfg.DeviceID != "" {
+			a.deviceID = cfg.DeviceID
+			a.deviceName = cfg.DeviceName
+			log.Printf("加载设备信息: ID=%s, Name=%s", a.deviceID, a.deviceName)
+			return
+		}
+	}
+
+	// 生成新的设备ID和名称
+	a.deviceID = uuid.New().String() // 需要导入 "github.com/google/uuid"
+	hostname, _ := os.Hostname()
+	if hostname == "" {
+		hostname = "拍瞬传设备"
+	}
+	a.deviceName = hostname
+
+	// 保存配置
+	cfg = Config{DeviceID: a.deviceID, DeviceName: a.deviceName}
+	data, _ = json.MarshalIndent(cfg, "", "  ")
+	if err := os.WriteFile(a.configPath, data, 0644); err != nil {
+		log.Printf("保存设备配置失败: %v", err)
+	}
+	log.Printf("生成新设备信息: ID=%s, Name=%s", a.deviceID, a.deviceName)
+}
+
+func (a *App) startUDPDiscovery() {
+	addr := &net.UDPAddr{
+		IP:   net.IPv4(0, 0, 0, 0),
+		Port: a.udpPort,
+	}
+	conn, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		log.Printf("⚠️ UDP发现服务启动失败 (端口 %d 被占用): %v", a.udpPort, err)
+		a.udpReady = false
+		// 通知前端显示错误信息（通过事件）
+		wailsRuntime.EventsEmit(a.ctx, "udpError", "UDP发现端口被占用，设备自动发现功能不可用，请使用扫码或手动输入连接")
+		return
+	}
+	a.udpConn = conn
+	a.udpReady = true
+	log.Printf("UDP发现服务已启动，监听端口: %d", a.udpPort)
+
+	// 广播回复处理
+	buffer := make([]byte, 1024)
+	for {
+		n, remoteAddr, err := conn.ReadFromUDP(buffer)
+		if err != nil {
+			log.Printf("UDP读取错误: %v", err)
+			continue
+		}
+		msg := string(buffer[:n])
+		if msg == "PAISHUNCHUAN_DISCOVER" {
+			// 构造回复信息
+			deviceInfo := struct {
+				DeviceID   string `json:"deviceID"`
+				DeviceName string `json:"deviceName"`
+				IP         string `json:"ip"`
+				HTTPPort   int    `json:"httpPort"`
+			}{
+				DeviceID:   a.deviceID,
+				DeviceName: a.deviceName,
+				IP:         getLocalIP(),
+				HTTPPort:   a.httpPort,
+			}
+			data, _ := json.Marshal(deviceInfo)
+			// 回复给查询方（单播）
+			conn.WriteToUDP(data, remoteAddr)
+			log.Printf("UDP回复设备信息给 %s", remoteAddr.String())
 		}
 	}
 }

@@ -1,42 +1,69 @@
-<view class="container">
-  <view class="logo-area">
-    <image class="logo" src="/images/logo.png" mode="aspectFit"></image>
-    <text class="title">拍瞬传</text>
-    <text class="subtitle">局域网拍照上传工具</text>
+<view class="page-container">
+  <!-- 顶部品牌区 -->
+  <view class="brand-section">
+    <view class="logo-wrapper">
+      <image class="logo" src="/images/logo.png" mode="aspectFit"></image>
+    </view>
+    <view class="brand-title">拍瞬传</view>
+    <view class="brand-subtitle">手机一键传图至电脑 · 局域网高速传输</view>
+    <view class="wifi-tip" wx:if="{{!wifiConnected}}">
+      ⚠️ 手机与电脑需连接同一个WiFi才能传输
+    </view>
   </view>
 
-  <view class="form">
-    <view class="input-group">
-      <text class="label">服务端地址</text>
+  <!-- 输入卡片 -->
+  <view class="input-card">
+    <view class="card-header">
+      <text class="card-title">电脑服务端地址</text>
+      <text class="help-icon" bindtap="showIPHelp">?</text>
+    </view>
+    <view class="input-wrapper {{ipError ? 'error' : ''}}">
+      <text class="input-icon">🔗</text>
       <input 
-        class="input" 
-        placeholder="例如 192.168.1.100:5000 或 http://192.168.1.100:5000" 
-        value="{{inputUrl}}" 
+        class="ip-input"
+        type="text"
+        placeholder="请输入电脑局域网IP，例：192.168.1.105:5000"
+        placeholder-class="input-placeholder"
+        value="{{inputUrl}}"
         bindinput="onInputChange"
-        disabled="{{testing}}"
+        bindfocus="onInputFocus"
+        bindblur="onInputBlur"
+        disabled="{{inputDisabled || testing}}"
+        maxlength="30"
       />
+      <view class="input-actions">
+        <view class="action-btn" bindtap="pasteFromClipboard" wx:if="{{!inputDisabled && !testing}}">
+          <text>📋</text>
+        </view>
+        <view class="action-btn" bindtap="clearInput" wx:if="{{inputUrl && !inputDisabled && !testing}}">
+          <text>✕</text>
+        </view>
+      </view>
     </view>
-
-    <view class="button-group">
-      <button class="btn primary" bindtap="testConnection" disabled="{{!wifiConnected || testing}}">
-        {{testing ? '连接中...' : '手动连接'}}
-      </button>
-      <button class="btn secondary" bindtap="scanQRCode" disabled="{{testing}}">
-        📷 扫码连接
-      </button>
-    </view>
-
-    <view wx:if="{{testResult}}" class="result {{testSuccess ? 'success' : 'error'}}">
-      {{testResult}}
-    </view>
-
-    <view wx:if="{{!wifiConnected}}" class="wifi-warning">
-      ⚠️ 未检测到WiFi连接，请连接WiFi后使用
-    </view>
-
-    <!-- 新增帮助链接 -->
-    <view class="help-link" bindtap="gotoHelp">
-      ❓ 使用帮助
-    </view>
+    <view class="error-tip" wx:if="{{ipError}}">IP 或端口格式不正确</view>
+    <view class="input-footer">打开电脑端程序即可查看局域网IP</view>
   </view>
+
+  <!-- 按钮组 -->
+  <view class="button-group">
+    <button class="btn-primary" bindtap="scanQRCode" disabled="{{!wifiConnected || testing}}">
+      <text class="btn-icon">📷</text>
+      <text class="btn-text">扫码连接</text>
+    </button>
+    <button class="btn-secondary" bindtap="testConnection" disabled="{{!wifiConnected || testing || ipError}}">
+      <text class="btn-icon">🔗</text>
+      <text class="btn-text">手动连接</text>
+    </button>
+  </view>
+
+  <!-- 帮助入口 -->
+  <view class="help-entry" bindtap="gotoHelp">
+    <view class="help-icon-circle">?</view>
+    <text class="help-text">连接失败？查看完整使用教程</text>
+    <text class="help-arrow">›</text>
+  </view>
+
+  <!-- 底部版本 -->
+  <view class="footer-text">拍瞬传 {{version}} | 局域网无损传图工具</view>
+
 </view>

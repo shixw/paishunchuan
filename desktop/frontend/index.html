@@ -77,6 +77,74 @@
         .confirm-buttons .cancel-btn { background: #e2e8f0; color: #334155; }
         @media (max-width: 1024px) { .left-sidebar { width: 240px; } }
         @media (max-width: 768px) { .main-layout { flex-direction: column; } .left-sidebar { width: 100%; } .right-content { min-height: 400px; } .header { flex-wrap: wrap; gap: 8px; } .header-left h1 { font-size: 1.1rem; } }
+       /* 设备信息（与二维码风格统一） */
+        .device-info {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e9eef3;
+        }
+        .device-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .device-id-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .device-id {
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 12px;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 4px;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .copy-id-btn {
+            background: #e2e8f0;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            color: #1e293b;
+            transition: background 0.2s;
+        }
+        .copy-id-btn:hover {
+            background: #cbd5e1;
+        }
+        .udp-status {
+            margin-top: 6px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
+        }
+        .status-dot.ready {
+            background: #10b981;
+        }
+        .status-dot.error {
+            background: #ef4444;
+        }
+        .status-text.ready {
+            color: #10b981;
+        }
+        .status-text.error {
+            color: #ef4444;
+        }
     </style>
 </head>
 <body>
@@ -97,8 +165,9 @@
 
     <div class="main-layout">
         <aside class="left-sidebar">
+            <!-- 二维码 + 设备信息（合并卡片） -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">二维码</div>
+                <div class="sidebar-section-title">📡 服务端信息</div>
                 <div class="qr-row">
                     <div class="qr-item">
                         <img id="qrcode" alt="服务端连接码">
@@ -107,6 +176,18 @@
                     <div class="qr-item">
                         <img id="miniprogramQR" src="static/gh_17589e751079_1280.jpg" alt="小程序码">
                         <div class="qr-label">小程序码</div>
+                    </div>
+                </div>
+                <!-- 设备信息（紧跟在二维码下方） -->
+                <div class="device-info">
+                    <div class="device-name" id="deviceName">加载中...</div>
+                    <div class="device-id-row">
+                        <span class="device-id" id="deviceID">---</span>
+                        <button class="copy-id-btn" id="copyDeviceIdBtn" title="复制设备ID">📋</button>
+                    </div>
+                    <div class="udp-status" id="udpStatus">
+                        <span class="status-dot"></span>
+                        <span class="status-text">检测中...</span>
                     </div>
                 </div>
             </div>
@@ -378,6 +459,8 @@
     function refresh() {
         loadClients();
         loadImages();
+        loadDeviceInfo(); 
+
     }
 
     function setupImagePreview() {
@@ -572,6 +655,58 @@
         } catch (err) {
             showToast('❌ 网络错误，设置失败', true);
             autoCopyCheckbox.checked = !enabled;
+        }
+    });
+
+    async function loadDeviceInfo() {
+        if (!API_BASE) return;
+        try {
+            const resp = await fetch(API_BASE + '/api/device-info');
+            const data = await resp.json();
+
+            document.getElementById('deviceName').textContent = data.deviceName || '未命名设备';
+            document.getElementById('deviceID').textContent = data.deviceID || '---';
+
+            const statusEl = document.getElementById('udpStatus');
+            const dot = statusEl.querySelector('.status-dot');
+            const text = statusEl.querySelector('.status-text');
+
+            if (data.udpReady) {
+                dot.className = 'status-dot ready';
+                text.textContent = 'UDP 发现已就绪 (端口 19988)';
+                text.className = 'status-text ready';
+            } else {
+                dot.className = 'status-dot error';
+                text.textContent = data.udpError || 'UDP 发现不可用，请检查端口冲突';
+                text.className = 'status-text error';
+            }
+        } catch (err) {
+            console.error('加载设备信息失败', err);
+        }
+    }
+
+    // 复制设备ID
+    document.addEventListener('DOMContentLoaded', function() {
+        const copyBtn = document.getElementById('copyDeviceIdBtn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function() {
+                const idEl = document.getElementById('deviceID');
+                const id = idEl.textContent;
+                if (id && id !== '---') {
+                    navigator.clipboard.writeText(id).then(() => {
+                        showToast('✅ 设备ID已复制');
+                    }).catch(() => {
+                        // 降级方案
+                        const textarea = document.createElement('textarea');
+                        textarea.value = id;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        showToast('✅ 设备ID已复制');
+                    });
+                }
+            });
         }
     });
 
