@@ -729,15 +729,13 @@ func (a *App) startUDPDiscovery() {
 	if err != nil {
 		log.Printf("⚠️ UDP发现服务启动失败 (端口 %d 被占用): %v", a.udpPort, err)
 		a.udpReady = false
-		// 通知前端显示错误信息（通过事件）
-		wailsRuntime.EventsEmit(a.ctx, "udpError", "UDP发现端口被占用，设备自动发现功能不可用，请使用扫码或手动输入连接")
+		wailsRuntime.EventsEmit(a.ctx, "udpError", "UDP发现端口被占用，设备自动发现功能不可用")
 		return
 	}
 	a.udpConn = conn
 	a.udpReady = true
-	log.Printf("UDP发现服务已启动，监听端口: %d", a.udpPort)
+	log.Printf("✅ UDP发现服务已启动，监听端口: %d，本机IP: %s", a.udpPort, getLocalIP())
 
-	// 广播回复处理
 	buffer := make([]byte, 1024)
 	for {
 		n, remoteAddr, err := conn.ReadFromUDP(buffer)
@@ -746,8 +744,13 @@ func (a *App) startUDPDiscovery() {
 			continue
 		}
 		msg := string(buffer[:n])
+		log.Printf("UDP收到消息: 长度=%d, 内容='%s', 来自 %s", n, msg, remoteAddr.String())
+
 		if msg == "PAISHUNCHUAN_DISCOVER" {
-			// 构造回复信息
+			localIP := getLocalIP()
+			if localIP == "" {
+				localIP = "127.0.0.1"
+			}
 			deviceInfo := struct {
 				DeviceID   string `json:"deviceID"`
 				DeviceName string `json:"deviceName"`
@@ -756,13 +759,14 @@ func (a *App) startUDPDiscovery() {
 			}{
 				DeviceID:   a.deviceID,
 				DeviceName: a.deviceName,
-				IP:         getLocalIP(),
+				IP:         localIP,
 				HTTPPort:   a.httpPort,
 			}
 			data, _ := json.Marshal(deviceInfo)
-			// 回复给查询方（单播）
 			conn.WriteToUDP(data, remoteAddr)
-			log.Printf("UDP回复设备信息给 %s", remoteAddr.String())
+			log.Printf("✅ UDP回复设备信息: %s -> %s", localIP, remoteAddr.String())
+		} else {
+			log.Printf("UDP消息不匹配查询字符串，忽略")
 		}
 	}
 }

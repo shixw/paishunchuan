@@ -10,20 +10,18 @@ Page({
     testing: false,
     testResult: '',
     testSuccess: false,
-    version: 'v1.0.0'
+    version: 'v1.0.0',
+    discovering: false
   },
 
   onLoad() {
-    // 获取版本号（正式版自动获取，非正式版用默认值）
     try {
       const accountInfo = wx.getAccountInfoSync();
       const ver = accountInfo.miniProgram.version;
       if (ver) {
         this.setData({ version: 'v' + ver });
       }
-    } catch (e) {
-      // 降级使用默认版本
-    }
+    } catch (e) {}
     this.checkWifi();
     const saved = app.globalData.serverUrl;
     if (saved) {
@@ -33,6 +31,18 @@ Page({
 
   onShow() {
     this.checkWifi();
+  },
+
+  onUnload() {
+    if (this._udp) {
+      this._udp.close();
+      this._udp = null;
+    }
+    if (this._timeout) {
+      clearTimeout(this._timeout);
+      this._timeout = null;
+    }
+    this._devices = null;
   },
 
   checkWifi() {
@@ -223,5 +233,118 @@ Page({
 
   gotoHelp() {
     wx.navigateTo({ url: '/pages/help/help' });
+  },
+
+  // ===== UDP 自动发现 =====
+  startDiscovery() {
+    if (!this.data.wifiConnected) {
+      wx.showToast({ title: '请先连接WiFi', icon: 'none' });
+      return;
+    }
+    if (this.data.discovering) return;
+
+    this.setData({ discovering: true });
+    wx.showLoading({ title: '扫描服务端...', mask: true });
+
+    const udp = wx.createUDPSocket();
+    const PORT = 19988;
+    const broadcastAddr = '255.255.255.255';
+    const queryMsg = 'PAISHUNCHUAN_DISCOVER';
+    this._devices = [];
+
+    // 监听消息（修复 ArrayBuffer 解析）
+    udp.onMessage((res) => {
+      // 将 ArrayBuffer 转为字符串
+      const msgStr = String.fromCharCode.apply(null, new Uint8Array(res.message));
+      console.log('📥 UDP收到原始数据:', msgStr);
+      try {
+        const data = JSON.parse(msgStr);
+        console.log('📥 解析成功:', data);
+        if (data.deviceID && data.ip && data.httpPort) {
+          const exist = this._devices.find(d => d.deviceID === data.deviceID);
+          if (!exist) {
+            this._devices.push({
+              deviceID: data.deviceID,
+              deviceName: data.deviceName || '未知设备',
+              ip: data.ip,
+              httpPort: data.httpPort
+            });
+            console.log('✅ 已记录设备:', data.deviceName, data.ip);
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ 解析失败:', e);
+      }
+    });
+
+    // 绑定并发送
+    try {
+      udp.bind();
+      console.log('📤 发送UDP广播:', queryMsg);
+      udp.send({
+        address: broadcastAddr,
+        port: PORT,
+        message: queryMsg,
+        success: () => {
+          console.log('✅ UDP广播发送成功');
+        },
+        fail: (err) => {
+          console.error('❌ UDP广播发送失败', err);
+          wx.hideLoading();
+          this.setData({ discovering: false });
+          wx.showToast({ title: 'UDP发送失败', icon: 'none' });
+        }
+      });
+    } catch (e) {
+      console.error('UDP初始化失败', e);
+      wx.hideLoading();
+      this.setData({ discovering: false });
+      wx.showToast({ title: 'UDP初始化失败', icon: 'none' });
+      return;
+    }
+
+    // 超时处理（5秒）
+    const timeout = setTimeout(() => {
+      udp.close();
+      wx.hideLoading();
+      this.setData({ discovering: false });
+
+      const devices = this._devices || [];
+      console.log('📋 扫描完成，发现设备数:', devices.length);
+
+      if (devices.length === 0) {
+        wx.showModal({
+          title: '未发现服务端',
+          content: '请确保：\n1. 电脑端程序已启动\n2. 手机与电脑在同一WiFi\n3. 防火墙未拦截UDP端口19988',
+          confirmText: '我知道了',
+          showCancel: false
+        });
+        return;
+      }
+
+      if (devices.length === 1) {
+        const dev = devices[0];
+        const url = `http://${dev.ip}:${dev.httpPort}`;
+        this.setData({ inputUrl: url, ipError: false });
+        wx.showToast({ title: `✅ 发现设备: ${dev.deviceName}`, icon: 'none', duration: 1500 });
+        this.testConnection();
+      } else {
+        const itemList = devices.map(d => `${d.deviceName} (${d.ip})`);
+        wx.showActionSheet({
+          itemList: itemList,
+          success: (res) => {
+            const selected = devices[res.tapIndex];
+            const url = `http://${selected.ip}:${selected.httpPort}`;
+            this.setData({ inputUrl: url, ipError: false });
+            wx.showToast({ title: `✅ 已选择: ${selected.deviceName}`, icon: 'none', duration: 1500 });
+            this.testConnection();
+          },
+          fail: () => {}
+        });
+      }
+    }, 5000);
+
+    this._udp = udp;
+    this._timeout = timeout;
   }
 });

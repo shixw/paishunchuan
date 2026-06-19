@@ -50,6 +50,10 @@
       <text class="btn-icon">📷</text>
       <text class="btn-text">扫码连接</text>
     </button>
+    <button class="btn-discovery" bindtap="startDiscovery" disabled="{{!wifiConnected || testing || discovering}}">
+      <text class="btn-icon">🔍</text>
+      <text class="btn-text">{{discovering ? '扫描中...' : '自动发现'}}</text>
+    </button>
     <button class="btn-secondary" bindtap="testConnection" disabled="{{!wifiConnected || testing || ipError}}">
       <text class="btn-icon">🔗</text>
       <text class="btn-text">手动连接</text>
