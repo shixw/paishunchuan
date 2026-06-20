@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>拍瞬传 - 手机拍照传电脑 · 局域网无损传图工具</title>
+    <meta name="description" content="拍瞬传是一款纯局域网手机拍照传输工具，免流量、原画质、跨平台，支持微信小程序扫码连接，一键将照片传到电脑。" />
+    <meta name="keywords" content="局域网传图,手机拍照传电脑,免流量传输,微信小程序传图,跨平台文件传输" />
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+    <!-- ===== 顶部导航 ===== -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <a class="nav-logo" href="#">
+                <img src="images/logo.png" alt="拍瞬传 Logo" height="36" />
+                <span>拍瞬传</span>
+            </a>
+            <nav class="nav-links" id="navLinks">
+                <a href="#features">功能</a>
+                <a href="#how-to-use">使用指南</a>
+                <a href="#download">下载</a>
+                <a href="#faq">常见问题</a>
+                <a href="https://github.com/shixw/paishunchuan" target="_blank">GitHub</a>
+            </nav>
+            <button class="nav-toggle" id="navToggle" aria-label="菜单">☰</button>
+        </div>
+    </header>
+
+    <!-- ===== Hero 区 ===== -->
+    <section class="hero">
+        <div class="container hero-content">
+            <div class="hero-text">
+                <h1>📸 拍瞬传</h1>
+                <p class="hero-subtitle">手机拍照，瞬间抵达电脑 · 纯局域网无损传图工具</p>
+                <div class="hero-buttons">
+                    <a href="#download" class="btn btn-primary">📥 下载桌面端</a>
+                    <button class="btn btn-secondary" id="qrModalBtn">📱 小程序码</button>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="images/screenshot-pc.png" alt="拍瞬传桌面端截图" />
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== 功能卡片 ===== -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">✨ 核心功能</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📶</div>
+                    <h3>免流量传输</h3>
+                    <p>纯局域网直连，不消耗手机流量，无需公网服务器，传输速度更快</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🖼️</div>
+                    <h3>原图画质</h3>
+                    <p>拍照上传零压缩，保留原始分辨率和细节，适合打印或存档</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📂</div>
+                    <h3>智能分类</h3>
+                    <p>支持自定义标签，照片自动分组存储，告别杂乱的电脑文件夹</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💻</div>
+                    <h3>跨平台支持</h3>
+                    <p>桌面端兼容 Windows、macOS、Linux，一个工具全家通用</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>隐私安全</h3>
+                    <p>数据仅在局域网传输，不上传任何云端服务器，你的照片你做主</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📄</div>
+                    <h3>一键导出PDF</h3>
+                    <p>多张图片合并为PDF，方便归档、打印或分享</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== 使用步骤（横向三列） ===== -->
+    <section id="how-to-use" class="how-to-use">
+        <div class="container">
+            <h2 class="section-title">🚀 三步轻松上手</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <img src="images/step1.png" alt="电脑运行拍瞬传桌面端" />
+                        <h3>电脑下载运行</h3>
+                        <p>下载并运行桌面端，自动显示二维码和IP</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <img src="images/step2.png" alt="微信扫码连接" />
+                        <h3>手机扫码连接</h3>
+                        <p>微信扫码小程序「拍瞬传」，扫码配对</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <img src="images/step3.png" alt="拍照上传" />
+                        <h3>拍照上传</h3>
+                        <p>点击拍照，照片自动按标签保存到电脑</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== 下载区 ===== -->
+    <section id="download" class="download">
+        <div class="container">
+            <h2 class="section-title">📦 下载桌面端</h2>
+            <p class="download-subtitle">支持 Windows / macOS / Linux，根据您的系统选择对应版本</p>
+            <div class="download-cards">
+                <a href="https://github.com/shixw/paishunchuan/releases/latest" target="_blank" class="download-card">
+                    <div class="download-icon">🐙</div>
+                    <h3>GitHub Releases</h3>
+                    <p>推荐渠道 · 下载最新版本</p>
+                    <span class="download-btn">前往下载 →</span>
+                </a>
+                <a href="https://pan.baidu.com/s/1wlCR9NL4ixBJV-YuRuthtw?pwd=ehcb" target="_blank" class="download-card">
+                    <div class="download-icon">☁️</div>
+                    <h3>百度网盘</h3>
+                    <p>提取码：ehcb · 国内备用</p>
+                    <span class="download-btn">前往下载 →</span>
+                </a>
+            </div>
+            <div class="download-versions">
+                <p><strong>版本 v3.0.0</strong> · 跨平台支持</p>
+                <p class="version-detail">Windows <code>.exe</code> · macOS <code>.app</code> · Linux <code>可执行文件</code></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="faq">
+        <div class="container">
+            <h2 class="section-title">❓ 常见问题</h2>
+            <div class="faq-list">
+                <details class="faq-item">
+                    <summary>手机无法连接服务端？</summary>
+                    <div class="faq-answer">
+                        <p>请按以下顺序排查：</p>
+                        <ol>
+                            <li>确保手机与电脑连接<strong>同一 WiFi</strong>；</li>
+                            <li>检查电脑防火墙是否放行了程序（首次运行会提示，请允许）；</li>
+                            <li>确认服务端已正常运行（桌面状态页可见）；</li>
+                            <li>尝试手动输入IP地址连接。</li>
+                        </ol>
+                    </div>
+                </details>
+                <details class="faq-item">
+                    <summary>上传失败怎么办？</summary>
+                    <div class="faq-answer">
+                        <p>上传失败通常与网络或端口有关：</p>
+                        <ol>
+                            <li>确认手机WiFi与电脑处于同一网段；</li>
+                            <li>检查服务端端口（默认5000）未被占用；</li>
+                            <li>查看电脑端日志文件（状态页可打开日志目录）；</li>
+                            <li>重启服务端和小程序重试。</li>
+                        </ol>
+                    </div>
+                </details>
+                <details class="faq-item">
+                    <summary>如何更新桌面端？</summary>
+                    <div class="faq-answer">
+                        <p>从 <a href="https://github.com/shixw/paishunchuan/releases/latest" target="_blank">GitHub Releases</a> 下载最新版本，替换旧文件即可。图片保存目录（<code>~/拍瞬传图片</code>）不受影响。</p>
+                    </div>
+                </details>
+                <details class="faq-item">
+                    <summary>数据会上传到云端吗？</summary>
+                    <div class="faq-answer">
+                        <p><strong>不会。</strong> 拍瞬传是纯局域网工具，所有照片仅在手机与电脑之间传输，<strong>不上传任何云端服务器</strong>，您的隐私完全由自己掌控。</p>
+                    </div>
+                </details>
+                <details class="faq-item">
+                    <summary>支持哪些操作系统？</summary>
+                    <div class="faq-answer">
+                        <p>桌面端支持：</p>
+                        <ul>
+                            <li>Windows 10/11（64位）</li>
+                            <li>macOS 10.15+（Intel / Apple Silicon）</li>
+                            <li>Linux（Ubuntu/Debian/CentOS 等主流发行版）</li>
+                        </ul>
+                        <p>小程序端支持 iOS 14+ / Android 7.0+。</p>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== 页脚 ===== -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-info">
+                <p>© 2026 拍瞬传 · 开源免费</p>
+                <p>京ICP备2026034358号</p>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/shixw/paishunchuan" target="_blank">GitHub 仓库</a>
+                <a href="#" id="qrModalFooterBtn">小程序码</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===== 小程序码弹窗 ===== -->
+    <div class="modal-overlay" id="qrModal">
+        <div class="modal-box">
+            <button class="modal-close" id="qrModalClose">&times;</button>
+            <h3>📱 扫码体验「拍瞬传」</h3>
+            <img src="images/qrcode.jpg" alt="拍瞬传小程序码" />
+            <p>微信扫码打开小程序，立即连接电脑传图</p>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
