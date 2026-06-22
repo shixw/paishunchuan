@@ -1,6 +1,6 @@
 {
   "name": "@wailsapp/runtime",
-  "version": "2.0.0",
+  "version": "zen.0",
   "description": "Wails Javascript runtime library",
   "main": "runtime.js",
   "types": "runtime.d.ts",

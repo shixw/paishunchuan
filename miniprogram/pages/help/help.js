@@ -22,5 +22,16 @@ Page({
       fullUrl += (fullUrl.includes('?') ? '&' : '?') + 'pwd=' + encodeURIComponent(this.data.baiduCode);
     }
     this.copyUrl(fullUrl, '百度网盘链接(含提取码)已复制');
+  },
+  onShareAppMessage() {
+    return {
+      title: '📸 拍瞬传使用帮助',
+      path: '/pages/help/help'
+    }
+  },
+  onShareTimeline() {
+    return {
+      title: '📸 拍瞬传使用帮助'
+    }
   }
 });

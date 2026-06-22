@@ -346,5 +346,18 @@ Page({
 
     this._udp = udp;
     this._timeout = timeout;
+  },
+
+  onShareAppMessage() {
+    return {
+      title: '📸 拍瞬传 - 连接服务端',
+      path: '/pages/connect/connect'
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: '📸 拍瞬传 - 局域网传图工具'
+    }
   }
 });
