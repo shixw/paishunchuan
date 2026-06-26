@@ -18,7 +18,7 @@ jobs:
       - name: Build
         working-directory: ./desktop
         run: |
-          wails build -platform windows/amd64 -ldflags "-s -w"
+          wails build -platform windows/amd64 -ldflags "-s -w"  -webview2 embed
           mkdir -p ../dist
           # 请根据实际生成的文件名修改（可能是拍瞬传.exe 或 paishunchuan-desktop.exe）
           Copy-Item -Path "build/bin/paishunchuan-desktop.exe" -Destination "../dist/拍瞬传-windows-amd64.exe"
