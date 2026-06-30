@@ -18,14 +18,13 @@ jobs:
       - name: Build
         working-directory: ./desktop
         run: |
-          wails build -platform windows/amd64 -ldflags "-s -w"  -webview2 embed
+          wails build -platform windows/amd64 -ldflags "-s -w" -webview2 embed
           mkdir -p ../dist
-          # 请根据实际生成的文件名修改（可能是拍瞬传.exe 或 paishunchuan-desktop.exe）
-          Copy-Item -Path "build/bin/paishunchuan-desktop.exe" -Destination "../dist/拍瞬传-windows-amd64.exe"
+          Copy-Item -Path "build/bin/paishunchuan-desktop.exe" -Destination "../dist/paishunchuan-${{ github.ref_name }}-win-amd64.exe"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: 拍瞬传-windows-amd64
+          name: paishunchuan-win-amd64
           path: dist/*
 
   build-macos:
@@ -45,12 +44,26 @@ jobs:
         run: |
           wails build -platform darwin/${{ matrix.arch }} -ldflags "-s -w"
           mkdir -p ../dist
-          # 请根据实际生成的 .app 名称修改
-          zip -r "../dist/拍瞬传-darwin-${{ matrix.arch }}.zip" "build/bin/拍瞬传.app"
+          # 生成 ZIP
+          zip -r "../dist/paishunchuan-${{ github.ref_name }}-mac-${{ matrix.arch }}.zip" "build/bin/拍瞬传.app"
+      - name: Install create-dmg
+        run: brew install create-dmg
+      - name: Create DMG
+        working-directory: ./desktop
+        run: |
+          create-dmg --volname "拍瞬传" \
+                     --window-pos 200 120 \
+                     --window-size 800 400 \
+                     --icon-size 100 \
+                     --icon "拍瞬传.app" 200 190 \
+                     --hide-extension "拍瞬传.app" \
+                     --app-drop-link 600 185 \
+                     "../dist/paishunchuan-${{ github.ref_name }}-mac-${{ matrix.arch }}.dmg" \
+                     "build/bin/拍瞬传.app"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: 拍瞬传-darwin-${{ matrix.arch }}
+          name: paishunchuan-mac-${{ matrix.arch }}
           path: dist/*
 
   release:
