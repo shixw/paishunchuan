@@ -1,0 +1,65 @@
+<view class="page-container">
+  <!-- 状态栏占位 -->
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+
+  <!-- 顶部导航栏（精简：返回+标题） -->
+  <view class="nav-bar">
+    <view class="nav-back" bindtap="goBack">‹</view>
+    <view class="nav-title">预览 ({{selectedImages.length}}张)</view>
+  </view>
+
+  <!-- 缩略图网格 -->
+  <scroll-view class="grid-scroll" scroll-y>
+    <view class="image-grid">
+      <view class="grid-item" wx:for="{{selectedImages}}" wx:key="index">
+        <image class="grid-img" src="{{item.tempFilePath}}" mode="aspectFill" bindtap="previewImage" data-index="{{index}}"></image>
+        <view class="grid-remove" bindtap="removeImage" data-index="{{index}}">✕</view>
+        <view class="grid-index">{{index + 1}}</view>
+      </view>
+      <view class="grid-item add-more" bindtap="addMore" wx:if="{{selectedImages.length < 9 && !uploading}}">
+        <text class="add-icon">+</text>
+        <text class="add-text">添加更多</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部设置区 + 上传按钮 -->
+  <view class="settings-area">
+    <view class="setting-row">
+      <text class="setting-label">🏷️ 标签</text>
+      <input class="setting-input" placeholder="输入标签" value="{{tag}}" bindinput="onTagChange" maxlength="20" />
+    </view>
+    <view class="setting-row">
+      <text class="setting-label">📸 上传质量</text>
+      <view class="quality-options">
+        <view class="quality-option {{compress ? '' : 'active'}}" bindtap="setQuality" data-compress="false">原图</view>
+        <view class="quality-option {{compress ? 'active' : ''}}" bindtap="setQuality" data-compress="true">智能压缩</view>
+      </view>
+    </view>
+    <view class="stat-row">
+      <text>共 {{selectedImages.length}} 张</text>
+      <text>·</text>
+      <text>预计大小：{{totalSize}} MB</text>
+      <text wx:if="{{compress}}">（压缩后约 {{compressedSize}} MB）</text>
+    </view>
+    <!-- 上传按钮（放在设置区底部） -->
+    <view class="upload-btn-wrapper">
+      <button 
+        class="upload-btn {{selectedImages.length === 0 || uploading ? 'disabled' : ''}}" 
+        bindtap="startUpload" 
+        disabled="{{selectedImages.length === 0 || uploading}}"
+      >
+        {{uploading ? '上传中...' : '📤 上传 ' + selectedImages.length + ' 张图片'}}
+      </button>
+    </view>
+  </view>
+
+  <!-- 上传进度（浮层） -->
+  <view class="upload-progress" wx:if="{{uploading}}">
+    <text class="progress-text">正在上传 {{uploadedCount}} / {{selectedImages.length}} ...</text>
+    <view class="progress-bar">
+      <view class="progress-fill" style="width: {{uploadProgress}}%;"></view>
+    </view>
+    <view class="progress-cancel" bindtap="cancelUpload">取消</view>
+  </view>
+</view>

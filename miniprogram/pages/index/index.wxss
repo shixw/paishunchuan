@@ -1,3 +1,4 @@
+/* ===== 页面基础 ===== */
 .camera-page {
   position: relative;
   width: 100%;
@@ -12,6 +13,8 @@ camera {
   width: 100%;
   height: 100%;
 }
+
+/* ===== 顶部状态栏 ===== */
 .top-bar {
   position: fixed;
   top: 0;
@@ -44,11 +47,22 @@ camera {
   font-size: 44rpx;
   color: white;
 }
-.shutter-btn {
+
+/* ===== 底部控制区 ===== */
+.bottom-bar {
   position: fixed;
-  bottom: 80rpx;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 60rpx;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 0 40rpx;
+}
+
+/* 拍照按钮 */
+.shutter-btn {
   width: 160rpx;
   height: 160rpx;
   border-radius: 50%;
@@ -56,7 +70,7 @@ camera {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  flex-shrink: 0;
 }
 .shutter-inner {
   width: 136rpx;
@@ -69,13 +83,53 @@ camera {
 .shutter-btn:active .shutter-inner {
   transform: scale(0.92);
 }
+
+.album-btn {
+  position: absolute;
+  right: 30rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 24rpx;
+  border-radius: 40rpx;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px);
+  border: 2rpx solid rgba(255, 255, 255, 0.6);
+  transition: all 0.2s;
+  min-width: 110rpx;
+}
+.album-btn:active {
+  opacity: 0.7;
+  transform: translateY(-50%) scale(0.95);
+}
+.album-text {
+  font-size: 26rpx;
+  color: #1F2937;
+  font-weight: 500;
+  letter-spacing: 1rpx;
+}
+
+/* ===== 遮罩层 ===== */
+.mask-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  z-index: 15;
+}
+
+/* ===== 设置面板 ===== */
 .control-panel {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(0, 0, 0, 0.25);  /* 更透明 */
-  backdrop-filter: blur(15px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(20px);
   border-top-left-radius: 40rpx;
   border-top-right-radius: 40rpx;
   padding: 30rpx 40rpx 50rpx;
@@ -115,43 +169,7 @@ camera {
   align-items: center;
   gap: 12rpx;
 }
-.tag-input-wrapper {
-  flex: 1;
-  margin-left: 20rpx;
-}
-.tag-input {
-  background: rgba(255,255,255,0.2);
-  border-radius: 40rpx;
-  padding: 12rpx 24rpx;
-  color: white;
-  font-size: 28rpx;
-  text-align: right;
-}
 .item-value {
   color: #fff;
   font-weight: 500;
-}
-
-.mask-layer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  z-index: 15;
-}
-
-.control-panel {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.85); 
-  backdrop-filter: blur(20px);
-  border-top-left-radius: 40rpx;
-  border-top-right-radius: 40rpx;
-  padding: 30rpx 40rpx 50rpx;
-  z-index: 20;  /* 高于遮罩层 */
-  animation: slideUp 0.3s ease;
 }

@@ -10,7 +10,7 @@
     binderror="onCameraError"
   ></camera>
 
-  <!-- 顶部状态栏（半透明） -->
+  <!-- 顶部状态栏 -->
   <cover-view class="top-bar">
     <cover-view class="service-btn" bindtap="goToConnect">切换服务</cover-view>
     <cover-view class="status-badge">
@@ -18,17 +18,22 @@
         {{healthStatus === 'online' ? '● 已连接' : (healthStatus === 'offline' ? '○ 断开' : '◐ 检测中')}}
       </cover-view>
     </cover-view>
-    <cover-view class="icon-group">
-      <cover-view class="settings-icon" bindtap="togglePanel">⚙️</cover-view>
+    <cover-view class="settings-icon" bindtap="togglePanel">⚙️</cover-view>
+  </cover-view>
+
+  <!-- 底部控制区 -->
+  <cover-view class="bottom-bar">
+    <!-- 拍照按钮 -->
+    <cover-view class="shutter-btn" bindtap="takePhoto">
+      <cover-view class="shutter-inner"></cover-view>
+    </cover-view>
+    <!-- 相册按钮 -->
+    <cover-view class="album-btn" bindtap="chooseFromAlbum">
+      <cover-view class="album-text">相册选择</cover-view>
     </cover-view>
   </cover-view>
 
-  <!-- 底部悬浮拍照按钮 -->
-  <cover-view class="shutter-btn" bindtap="takePhoto">
-    <cover-view class="shutter-inner"></cover-view>
-  </cover-view>
-
-  <!-- 控制面板（半透明） -->
+  <!-- 设置面板 -->
   <cover-view wx:if="{{showPanel}}" class="mask-layer" bindtap="togglePanel"></cover-view>
   <cover-view wx:if="{{showPanel}}" class="control-panel">
     <cover-view class="panel-header">

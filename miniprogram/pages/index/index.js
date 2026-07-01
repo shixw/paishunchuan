@@ -254,5 +254,28 @@ Page({
 
   goToConnect() {
     wx.redirectTo({ url: '/pages/connect/connect' });
+  },
+  chooseFromAlbum() {
+    // 实时检测 WiFi 状态
+    wx.getNetworkType({
+      success: (res) => {
+        if (res.networkType !== 'wifi') {
+          wx.showToast({ title: '请连接WiFi后使用', icon: 'none' });
+          return;
+        }
+        // 检查服务端连接状态
+        if (this.data.healthStatus !== 'online') {
+          wx.showToast({ title: '服务未连接，请先连接', icon: 'none' });
+          return;
+        }
+        // 跳转到预览页
+        wx.navigateTo({
+          url: `/pages/preview/preview?tag=${encodeURIComponent(this.data.tag || '默认')}`
+        });
+      },
+      fail: () => {
+        wx.showToast({ title: '网络状态检测失败', icon: 'none' });
+      }
+    });
   }
 });
