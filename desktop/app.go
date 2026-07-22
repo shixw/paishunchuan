@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
-	"image/jpeg"
 	"image/png"
 	"io"
 	"log"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -44,6 +44,41 @@ type ImageRecord struct {
 type ClientInfo struct {
 	IP         string    `json:"ip"`
 	LastActive time.Time `json:"lastActive"`
+}
+
+type PDFStyleConfig struct {
+	PageSize       string  `json:"pageSize"`
+	Orientation    string  `json:"orientation"`
+	MarginTop      float64 `json:"marginTop"`
+	MarginBottom   float64 `json:"marginBottom"`
+	MarginLeft     float64 `json:"marginLeft"`
+	MarginRight    float64 `json:"marginRight"`
+	Cols           int     `json:"cols"`
+	Rows           int     `json:"rows"`
+	GapX           float64 `json:"gapX"`
+	GapY           float64 `json:"gapY"`
+	Alignment      string  `json:"alignment"`
+	ShowPageNumber bool    `json:"showPageNumber"`
+	HeaderText     string  `json:"headerText"`
+	ScaleMode      string  `json:"scaleMode"`
+	Border         bool    `json:"border"`
+	BorderColor    string  `json:"borderColor"`
+	BorderWidth    float64 `json:"borderWidth"`
+	CellBackground string  `json:"cellBackground"`
+	Background     string  `json:"background"`
+	WatermarkText  string  `json:"watermarkText"`
+}
+
+type ImagePlacement struct {
+	Path       string
+	X          float64
+	Y          float64
+	W          float64
+	H          float64
+	CellX      float64
+	CellY      float64
+	CellWidth  float64
+	CellHeight float64
 }
 
 type App struct {
@@ -227,7 +262,8 @@ func (a *App) handleGeneratePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Paths []string `json:"paths"`
+		Paths []string       `json:"paths"`
+		Style PDFStyleConfig `json:"style"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -238,8 +274,7 @@ func (a *App) handleGeneratePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 生成PDF
-	outputPath, err := a.generatePDF(req.Paths)
+	outputPath, err := a.generatePDF(req.Paths, req.Style)
 	if err != nil {
 		log.Printf("PDF生成失败: %v", err)
 		http.Error(w, "PDF generation failed: "+err.Error(), http.StatusInternalServerError)
@@ -355,13 +390,13 @@ func (a *App) handleCopyImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// JPEG -> PNG 转换
-	img, err := jpeg.Decode(bytes.NewReader(data))
+	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		log.Printf("复制图片：JPEG解码失败 %v", err)
+		log.Printf("复制图片：解码失败 %v", err)
 		http.Error(w, "decode failed", http.StatusInternalServerError)
 		return
 	}
+
 	var pngBuf bytes.Buffer
 	if err := png.Encode(&pngBuf, img); err != nil {
 		log.Printf("复制图片：PNG编码失败 %v", err)
@@ -470,10 +505,9 @@ func (a *App) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	// 自动复制到剪贴板（如果开启）
 	if a.autoCopy {
-		// 重新打开文件（或使用已保存的数据）
 		imgFile, err := os.Open(savePath)
 		if err == nil {
-			img, err := jpeg.Decode(imgFile)
+			img, _, err := image.Decode(imgFile)
 			imgFile.Close()
 			if err == nil {
 				var pngBuf bytes.Buffer
@@ -484,7 +518,7 @@ func (a *App) handleUpload(w http.ResponseWriter, r *http.Request) {
 					log.Printf("PNG编码失败: %v", err)
 				}
 			} else {
-				log.Printf("JPEG解码失败: %v", err)
+				log.Printf("图片解码失败: %v", err)
 			}
 		} else {
 			log.Printf("打开文件失败: %v", err)
@@ -772,8 +806,95 @@ func (a *App) startUDPDiscovery() {
 }
 
 // ---------- 辅助函数 ----------
-func (a *App) generatePDF(relPaths []string) (string, error) {
-	log.Printf("generatePDF 开始，路径列表: %v", relPaths)
+func parseHexColor(hex string) (uint8, uint8, uint8) {
+	if len(hex) != 7 || hex[0] != '#' {
+		return 255, 255, 255
+	}
+	var r, g, b int
+	fmt.Sscanf(hex, "#%02x%02x%02x", &r, &g, &b)
+	return uint8(r), uint8(g), uint8(b)
+}
+
+func calculateGridLayout(
+	paths []string,
+	cols, rows int,
+	pageWidth, pageHeight float64,
+	marginLeft, marginRight, marginTop, marginBottom float64,
+	gapX, gapY float64,
+	scaleMode string,
+) ([]ImagePlacement, error) {
+	availableWidth := pageWidth - marginLeft - marginRight
+	availableHeight := pageHeight - marginTop - marginBottom
+
+	cellWidth := (availableWidth - float64(cols-1)*gapX) / float64(cols)
+	cellHeight := (availableHeight - float64(rows-1)*gapY) / float64(rows)
+
+	var placements []ImagePlacement
+
+	for i, path := range paths {
+		colIdx := i % cols
+		rowIdx := i / cols
+
+		cellX := marginLeft + float64(colIdx)*(cellWidth+gapX)
+		cellY := marginTop + float64(rowIdx)*(cellHeight+gapY)
+
+		file, err := os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		config, _, err := image.DecodeConfig(file)
+		file.Close()
+		if err != nil {
+			return nil, err
+		}
+
+		imgW := float64(config.Width)
+		imgH := float64(config.Height)
+
+		if imgW <= 0 || imgH <= 0 {
+			continue
+		}
+
+		var displayW, displayH, offsetX, offsetY float64
+
+		switch scaleMode {
+		case "cover":
+			scale := math.Max(cellWidth/imgW, cellHeight/imgH)
+			displayW = imgW * scale
+			displayH = imgH * scale
+			offsetX = (cellWidth - displayW) / 2
+			offsetY = (cellHeight - displayH) / 2
+		case "stretch":
+			displayW = cellWidth
+			displayH = cellHeight
+			offsetX = 0
+			offsetY = 0
+		default:
+			scale := math.Min(cellWidth/imgW, cellHeight/imgH)
+			displayW = imgW * scale
+			displayH = imgH * scale
+			offsetX = (cellWidth - displayW) / 2
+			offsetY = (cellHeight - displayH) / 2
+		}
+
+		placements = append(placements, ImagePlacement{
+			Path:       path,
+			X:          cellX + offsetX,
+			Y:          cellY + offsetY,
+			W:          displayW,
+			H:          displayH,
+			CellX:      cellX,
+			CellY:      cellY,
+			CellWidth:  cellWidth,
+			CellHeight: cellHeight,
+		})
+	}
+
+	return placements, nil
+}
+
+func (a *App) generatePDF(relPaths []string, style PDFStyleConfig) (string, error) {
+	log.Printf("generatePDF 开始，路径列表: %v, 样式配置: %+v", relPaths, style)
 	if len(relPaths) == 0 {
 		return "", fmt.Errorf("no images provided")
 	}
@@ -791,52 +912,181 @@ func (a *App) generatePDF(relPaths []string) (string, error) {
 		return "", fmt.Errorf("no valid images found")
 	}
 
-	pdf := &gopdf.GoPdf{}
-	pdf.Start(gopdf.Config{PageSize: gopdf.Rect{W: 595.28, H: 841.89}}) // A4
+	var pageW, pageH float64
+	switch style.PageSize {
+	case "A3":
+		pageW, pageH = 841.89, 1190.55
+	case "Letter":
+		pageW, pageH = 612, 792
+	default:
+		pageW, pageH = 595.28, 841.89
+	}
 
-	for i, absPath := range absPaths {
+	if style.Orientation == "landscape" {
+		pageW, pageH = pageH, pageW
+	}
+
+	cols := style.Cols
+	if cols < 1 {
+		cols = 1
+	}
+
+	marginLeft := style.MarginLeft
+	marginRight := style.MarginRight
+	marginTop := style.MarginTop
+	marginBottom := style.MarginBottom
+
+	if marginLeft <= 0 {
+		marginLeft = 50
+	}
+	if marginRight <= 0 {
+		marginRight = 50
+	}
+	if marginTop <= 0 {
+		marginTop = 50
+	}
+	if marginBottom <= 0 {
+		marginBottom = 50
+	}
+
+	gapX := style.GapX
+	gapY := style.GapY
+	if gapX <= 0 {
+		gapX = 10
+	}
+	if gapY <= 0 {
+		gapY = 10
+	}
+
+	maxRowsPerPage := 4
+	if len(absPaths) <= cols {
+		maxRowsPerPage = 1
+	} else if len(absPaths) <= cols*2 {
+		maxRowsPerPage = 2
+	} else if len(absPaths) <= cols*3 {
+		maxRowsPerPage = 3
+	}
+
+	imagesPerPage := cols * maxRowsPerPage
+
+	pdf := &gopdf.GoPdf{}
+	pdf.Start(gopdf.Config{PageSize: gopdf.Rect{W: pageW, H: pageH}})
+
+	fontRegistered := false
+	fontPath := getSystemFontPath()
+	log.Printf("尝试注册字体，路径: %s", fontPath)
+	if fontPath != "" {
+		ext := strings.ToLower(filepath.Ext(fontPath))
+		if ext == ".ttc" {
+			log.Printf("跳过 .ttc 字体文件: %s", fontPath)
+		} else if ext == ".otf" {
+			log.Printf("尝试注册 .otf 字体: %s", fontPath)
+			if err := pdf.AddTTFFont("default", fontPath); err == nil {
+				fontRegistered = true
+				log.Printf("OTF字体注册成功: %s", fontPath)
+			} else {
+				log.Printf("OTF字体注册失败: %v", err)
+			}
+		} else {
+			if err := pdf.AddTTFFont("default", fontPath); err == nil {
+				fontRegistered = true
+				log.Printf("字体注册成功: %s", fontPath)
+			} else {
+				log.Printf("注册字体失败: %v", err)
+			}
+		}
+	} else {
+		log.Printf("未找到系统字体，页眉页脚将无法显示")
+	}
+
+	for pageIdx := 0; pageIdx < len(absPaths); pageIdx += imagesPerPage {
 		pdf.AddPage()
-		// 获取图片尺寸
-		file, err := os.Open(absPath)
+
+		if style.Background != "" {
+			r, g, b := parseHexColor(style.Background)
+			pdf.SetFillColor(r, g, b)
+			pdf.RectFromUpperLeftWithStyle(0, 0, pageW, pageH, "F")
+		}
+
+		if style.ShowPageNumber && fontRegistered {
+			pdf.SetFont("default", "", 10)
+			pdf.SetTextColor(100, 100, 100)
+			pageNum := pageIdx/imagesPerPage + 1
+			totalPages := (len(absPaths) + imagesPerPage - 1) / imagesPerPage
+			pageText := fmt.Sprintf("第 %d 页 / 共 %d 页", pageNum, totalPages)
+			textWidth, _ := pdf.MeasureTextWidth(pageText)
+			pdf.SetXY(pageW-marginRight-textWidth, pageH-marginBottom/2-10)
+			pdf.Cell(&gopdf.Rect{W: textWidth, H: 20}, pageText)
+		}
+
+		if style.HeaderText != "" && fontRegistered {
+			pdf.SetFont("default", "", 14)
+			pdf.SetTextColor(0, 0, 0)
+			textWidth, _ := pdf.MeasureTextWidth(style.HeaderText)
+			pdf.SetXY((pageW-textWidth)/2, marginTop/2)
+			pdf.Cell(&gopdf.Rect{W: textWidth, H: 20}, style.HeaderText)
+		}
+
+		pagePaths := absPaths[pageIdx:min(pageIdx+imagesPerPage, len(absPaths))]
+		pageRows := (len(pagePaths) + cols - 1) / cols
+		placements, err := calculateGridLayout(
+			pagePaths,
+			cols, pageRows,
+			pageW, pageH,
+			marginLeft, marginRight, marginTop, marginBottom,
+			gapX, gapY,
+			style.ScaleMode,
+		)
 		if err != nil {
-			log.Printf("打开图片失败: %v", err)
+			log.Printf("计算布局失败: %v", err)
 			continue
 		}
-		config, _, err := image.DecodeConfig(file)
-		file.Close()
-		if err != nil {
-			log.Printf("解码图片尺寸失败: %v", err)
-			continue
+
+		borderWidth := style.BorderWidth
+		if borderWidth <= 0 {
+			borderWidth = 1
 		}
-		w := float64(config.Width)
-		h := float64(config.Height)
-		if w <= 0 || h <= 0 {
-			log.Printf("无效图片尺寸: w=%.2f, h=%.2f", w, h)
-			continue
+
+		for i, placement := range placements {
+			if style.CellBackground != "" {
+				r, g, b := parseHexColor(style.CellBackground)
+				pdf.SetFillColor(r, g, b)
+				pdf.RectFromUpperLeftWithStyle(placement.CellX, placement.CellY, placement.CellWidth, placement.CellHeight, "F")
+			}
+
+			if style.Border {
+				r, g, b := parseHexColor(style.BorderColor)
+				pdf.SetStrokeColor(r, g, b)
+				pdf.SetLineWidth(borderWidth)
+				pdf.RectFromUpperLeftWithStyle(placement.CellX, placement.CellY, placement.CellWidth, placement.CellHeight, "D")
+			}
+
+			rect := gopdf.Rect{W: placement.W, H: placement.H}
+			log.Printf("插入图片 [%d/%d]: %s, 尺寸: %.2fx%.2f, 位置: %.2f, %.2f",
+				pageIdx+i+1, len(absPaths), placement.Path, placement.W, placement.H, placement.X, placement.Y)
+			if err := pdf.Image(placement.Path, placement.X, placement.Y, &rect); err != nil {
+				log.Printf("插入图片失败: %v", err)
+				continue
+			}
 		}
-		// 缩放至页面宽度（左右边距各50，可用宽度495）
-		targetWidth := 495.0
-		scale := targetWidth / w
-		targetHeight := h * scale
-		// 如果高度超过页面高度（留上下边距各50，可用高度约742），则继续缩放
-		maxHeight := 742.0
-		if targetHeight > maxHeight {
-			scale = maxHeight / h
-			targetWidth = w * scale
-			targetHeight = maxHeight
-		}
-		// 居中对齐
-		x := (595.28 - targetWidth) / 2
-		y := (841.89 - targetHeight) / 2
-		rect := gopdf.Rect{W: targetWidth, H: targetHeight}
-		log.Printf("插入图片 [%d/%d]: %s, 尺寸: %.2fx%.2f, 位置: %.2f, %.2f", i+1, len(absPaths), absPath, targetWidth, targetHeight, x, y)
-		if err := pdf.Image(absPath, x, y, &rect); err != nil {
-			log.Printf("插入图片失败: %v", err)
-			continue
+
+		if style.WatermarkText != "" && fontRegistered {
+			pdf.SetFont("default", "", 24)
+			pdf.SetTextColor(245, 245, 245)
+			textWidth, _ := pdf.MeasureTextWidth(style.WatermarkText)
+			stepX := textWidth + 160
+			stepY := 180
+			for y := 120; y < int(pageH); y += stepY {
+				for x := -int(textWidth); x < int(pageW); x += int(stepX) {
+					pdf.Rotate(45, float64(x), float64(y))
+					pdf.SetXY(float64(x), float64(y))
+					pdf.Cell(&gopdf.Rect{W: textWidth, H: 35}, style.WatermarkText)
+					pdf.Rotate(-45, float64(x), float64(y))
+				}
+			}
 		}
 	}
 
-	// 确保PDF目录存在
 	if err := os.MkdirAll(a.pdfDir, 0755); err != nil {
 		return "", fmt.Errorf("创建PDF目录失败: %v", err)
 	}
@@ -847,6 +1097,54 @@ func (a *App) generatePDF(relPaths []string) (string, error) {
 		return "", fmt.Errorf("write PDF failed: %v", err)
 	}
 	return outputPath, nil
+}
+
+func getSystemFontPath() string {
+	fontPaths := []string{
+		"/Library/Fonts/Arial.ttf",
+		"/Library/Fonts/Verdana.ttf",
+		"/Library/Fonts/Tahoma.ttf",
+		"/Library/Fonts/Georgia.ttf",
+		"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+		"/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+		"C:\\Windows\\Fonts\\arial.ttf",
+		"C:\\Windows\\Fonts\\simhei.ttf",
+	}
+	for _, path := range fontPaths {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+
+	fontDirs := []string{
+		"/Library/Fonts",
+		"/System/Library/Fonts",
+		"~/Library/Fonts",
+		"/usr/share/fonts",
+		"/usr/share/fonts/truetype",
+		"C:\\Windows\\Fonts",
+	}
+
+	for _, dir := range fontDirs {
+		dir = filepath.Clean(dir)
+		files, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, file := range files {
+			if file.IsDir() {
+				continue
+			}
+			ext := strings.ToLower(filepath.Ext(file.Name()))
+			if ext == ".ttf" {
+				fullPath := filepath.Join(dir, file.Name())
+				log.Printf("找到字体文件: %s", fullPath)
+				return fullPath
+			}
+		}
+	}
+
+	return ""
 }
 
 func getLocalIP() string {

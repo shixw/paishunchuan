@@ -184,6 +184,85 @@
         .status-text.error {
             color: #ef4444;
         }
+        .pdf-style-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+        .pdf-style-box { background: white; border-radius: 16px; overflow: hidden; max-width: 900px; width: 95%; height: 80vh; display: flex; flex-direction: row; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+        .pdf-style-box-left { flex: 1; border-right: 1px solid #e9eef3; display: flex; flex-direction: column; background: #fafbfc; }
+        .pdf-style-box-right { flex: 1; display: flex; flex-direction: column; }
+        .pdf-style-header { padding: 16px 20px; border-bottom: 1px solid #e9eef3; display: flex; justify-content: space-between; align-items: center; background: white; }
+        .pdf-style-header h3 { font-size: 1rem; font-weight: 600; margin: 0; color: #1e293b; }
+        .pdf-style-close { width: 28px; height: 28px; border: none; background: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #94a3b8; }
+        .pdf-style-close:hover { background: #f1f5f9; color: #64748b; }
+        .preview-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .preview-header { background: #f1f5f9; padding: 10px 16px; font-size: 0.75rem; color: #64748b; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
+        .preview-scale { display: flex; align-items: center; gap: 4px; }
+        .preview-scale-btn { width: 24px; height: 24px; border: 1px solid #e2e8f0; border-radius: 4px; background: white; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+        .preview-scale-btn:hover { background: #e2e8f0; }
+        .preview-scale-value { font-size: 0.7rem; min-width: 40px; text-align: center; }
+        .preview-canvas-container { flex: 1; padding: 20px; display: flex; align-items: center; justify-content: center; overflow: auto; background: #f0f2f5; }
+        .preview-page-wrapper { transition: transform 0.2s ease; }
+        .preview-page { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: relative; }
+        .preview-header-text { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); font-size: 9px; color: #64748b; font-weight: bold; }
+        .preview-page-number { position: absolute; bottom: 8px; right: 8px; font-size: 9px; color: #94a3b8; }
+        .preview-grid-cell { display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        .preview-grid-cell img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .preview-grid-cell-placeholder { color: #94a3b8; font-size: 9px; text-align: center; padding: 6px; }
+        .preview-watermark { z-index: 10; }
+        .preview-nav { display: flex; justify-content: center; gap: 8px; padding: 10px; background: #f1f5f9; border-top: 1px solid #e2e8f0; }
+        .preview-nav button { padding: 4px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; cursor: pointer; font-size: 0.75rem; color: #64748b; }
+        .preview-nav button:hover { background: #e2e8f0; }
+        .preview-nav button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .config-panel { flex: 1; overflow-y: auto; padding: 16px; }
+        .config-group { margin-bottom: 20px; }
+        .config-group-title { font-size: 0.9rem; font-weight: 600; color: #1e293b; margin-bottom: 12px; }
+        .config-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .config-row:last-child { margin-bottom: 0; }
+        .config-row label { font-size: 0.8rem; color: #64748b; min-width: 60px; }
+        .config-row select { 
+            padding: 6px 10px; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 6px; 
+            font-size: 0.8rem; 
+            background: white; 
+            min-width: 130px; 
+            appearance: none; 
+            cursor: pointer; 
+            color: #334155; 
+            font-family: inherit; 
+        }
+        .config-row select:hover { border-color: #cbd5e1; }
+        .config-row select:focus { 
+            outline: none; 
+            border-color: #3b82f6; 
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
+        }
+        .config-row select option { padding: 6px 10px; }
+        .config-row .select-wrapper { position: relative; }
+        .config-row .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            font-size: 0.6rem;
+            color: #94a3b8;
+        }
+        .config-row input[type="number"] { padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.8rem; width: 60px; text-align: center; }
+        .config-row input[type="text"] { padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.8rem; flex: 1; }
+        .config-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: #3b82f6; }
+        .config-row input[type="range"] { flex: 1; height: 6px; border-radius: 3px; background: #e2e8f0; cursor: pointer; }
+        .config-options { display: flex; gap: 6px; }
+        .config-option-btn { padding: 6px 14px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; font-size: 0.8rem; cursor: pointer; color: #64748b; }
+        .config-option-btn:hover { background: #f1f5f9; }
+        .config-option-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+        .button-panel { padding: 16px; border-top: 1px solid #e9eef3; display: flex; gap: 10px; }
+        .button-panel button { flex: 1; padding: 10px; border-radius: 8px; font-size: 0.85rem; font-weight: 500; cursor: pointer; border: none; }
+        .btn-preview { background: white; border: 1px solid #3b82f6; color: #3b82f6; }
+        .btn-preview:hover { background: #eff6ff; }
+        .btn-export { background: #3b82f6; color: white; }
+        .btn-export:hover { background: #2563eb; }
+        .btn-cancel { background: #22c55e; color: white; }
+        .btn-cancel:hover { background: #16a34a; }
     </style>
 </head>
 <body>
@@ -546,38 +625,7 @@
                 const data = await resp.json();
                 showToast(data.success ? '📂 已打开图片目录' : '❌ 打开失败', !data.success);
             };
-            document.getElementById('exportPdfBtn').onclick = async () => {
-                const checked = document.querySelectorAll('.image-checkbox:checked');
-                const paths = Array.from(checked).map(cb => cb.dataset.relpath);
-                if (paths.length === 0) {
-                    showToast('请至少选择一张图片', true);
-                    return;
-                }
-                try {
-                    const response = await fetch(API_BASE + '/api/pdf', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ paths })
-                    });
-                    if (!response.ok) {
-                        const text = await response.text();
-                        showToast('导出失败：' + text, true);
-                        return;
-                    }
-                    const blob = await response.blob();
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = '拍瞬传-合并.pdf';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(link.href);
-                    showToast('✅ PDF已生成并下载');
-                } catch (err) {
-                    console.error(err);
-                    showToast('导出请求失败', true);
-                }
-            };
+            document.getElementById('exportPdfBtn').onclick = () => showPdfExportDialog();
             document.getElementById('openLogBtn').onclick = async () => {
                 try {
                     const response = await fetch(API_BASE + '/open-log');
@@ -605,38 +653,7 @@
                 const data = await resp.json();
                 showToast(data.success ? '📂 已打开图片目录' : '❌ 打开失败', !data.success);
             };
-            document.getElementById('exportPdfBtn').onclick = async () => {
-                const checked = document.querySelectorAll('.image-checkbox:checked');
-                const paths = Array.from(checked).map(cb => cb.dataset.relpath);
-                if (paths.length === 0) {
-                    showToast('请至少选择一张图片', true);
-                    return;
-                }
-                try {
-                    const response = await fetch(API_BASE + '/api/pdf', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ paths })
-                    });
-                    if (!response.ok) {
-                        const text = await response.text();
-                        showToast('导出失败：' + text, true);
-                        return;
-                    }
-                    const blob = await response.blob();
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = '拍瞬传-合并.pdf';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(link.href);
-                    showToast('✅ PDF已生成并下载');
-                } catch (err) {
-                    console.error(err);
-                    showToast('导出请求失败', true);
-                }
-            };
+            document.getElementById('exportPdfBtn').onclick = () => showPdfExportDialog();
             document.getElementById('openLogBtn').onclick = async () => {
                 try {
                     const response = await fetch(API_BASE + '/open-log');
@@ -750,6 +767,506 @@
 
     document.getElementById('refreshBtn').onclick = () => refresh();
     // document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
+
+    async function exportPdfWithStyle(paths, style) {
+        try {
+            const response = await fetch(API_BASE + '/api/pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paths, style })
+            });
+            if (!response.ok) {
+                const text = await response.text();
+                showToast('导出失败：' + text, true);
+                return;
+            }
+            const blob = await response.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '拍瞬传-合并.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+            showToast('✅ PDF已生成并下载');
+        } catch (err) {
+            console.error(err);
+            showToast('导出请求失败', true);
+        }
+    }
+
+    function showPdfExportDialog() {
+        const checked = document.querySelectorAll('.image-checkbox:checked');
+        const paths = Array.from(checked).map(cb => cb.dataset.relpath);
+        if (paths.length === 0) {
+            showToast('请至少选择一张图片', true);
+            return;
+        }
+
+        let showHeader = false;
+        let headerText = '拍瞬传';
+        let showPageNumber = false;
+        let pageSize = 'A4';
+        let orientation = 'portrait';
+        let cols = 1;
+        let gap = 10;
+        let marginTop = 50;
+        let marginBottom = 50;
+        let marginLeft = 50;
+        let marginRight = 50;
+        let scaleMode = 'contain';
+        let border = false;
+        let borderColor = '#cccccc';
+        let borderWidth = 1;
+        let cellBackground = '#f9f9f9';
+        let background = '#ffffff';
+        let showWatermark = false;
+        let watermarkText = '拍瞬传';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'pdf-style-overlay';
+        overlay.innerHTML = `
+            <div class="pdf-style-box">
+                <div class="pdf-style-box-left">
+                    <div class="pdf-style-header">
+                        <h3>导出PDF样式</h3>
+                        <button class="pdf-style-close" id="pdfStyleClose">×</button>
+                    </div>
+                    <div class="preview-panel">
+                        <div class="preview-header">
+                            <span>预览</span>
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <span id="previewPageInfo">第 1 页 / 共 1 页</span>
+                                <div class="preview-scale">
+                                    <button class="preview-scale-btn" id="zoomOut">-</button>
+                                    <span class="preview-scale-value" id="zoomValue">100%</span>
+                                    <button class="preview-scale-btn" id="zoomIn">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="preview-canvas-container" id="previewCanvasContainer"></div>
+                        <div class="preview-nav">
+                            <button id="previewPrev" disabled>上一页</button>
+                            <button id="previewNext" disabled>下一页</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="pdf-style-box-right">
+                    <div class="config-panel">
+                        <div class="config-group">
+                            <div class="config-group-title">📐 基板管理</div>
+                            <div class="config-row">
+                                <label>页面尺寸:</label>
+                                <div class="select-wrapper">
+                                    <select id="pdfPageSize">
+                                        <option value="A4" ${pageSize === 'A4' ? 'selected' : ''}>A4</option>
+                                        <option value="A3" ${pageSize === 'A3' ? 'selected' : ''}>A3</option>
+                                        <option value="Letter" ${pageSize === 'Letter' ? 'selected' : ''}>Letter</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="config-group">
+                            <div class="config-group-title">📏 页边距</div>
+                            <div class="config-row">
+                                <label>上:</label>
+                                <input type="number" id="pdfMarginTop" value="${marginTop}" min="0" max="100">
+                                <label>下:</label>
+                                <input type="number" id="pdfMarginBottom" value="${marginBottom}" min="0" max="100">
+                            </div>
+                            <div class="config-row">
+                                <label>左:</label>
+                                <input type="number" id="pdfMarginLeft" value="${marginLeft}" min="0" max="100">
+                                <label>右:</label>
+                                <input type="number" id="pdfMarginRight" value="${marginRight}" min="0" max="100">
+                            </div>
+                        </div>
+                        <div class="config-group">
+                            <div class="config-group-title">🔄 图片排列</div>
+                            <div class="config-row">
+                                <label>方向:</label>
+                                <div class="config-options">
+                                    <button class="config-option-btn ${orientation === 'portrait' ? 'active' : ''}" id="dirPortrait">纵向</button>
+                                    <button class="config-option-btn ${orientation === 'landscape' ? 'active' : ''}" id="dirLandscape">横向</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="config-group">
+                            <div class="config-group-title">⚙️ 单元格样式</div>
+                            <div class="config-row">
+                                <label>间距:</label>
+                                <input type="range" id="pdfGap" min="0" max="30" value="${gap}" style="flex:1;">
+                                <span id="gapValue">${gap}</span>
+                            </div>
+                            <div class="config-row">
+                                <label>缩放模式:</label>
+                                <div class="select-wrapper">
+                                    <select id="pdfScaleMode">
+                                        <option value="contain">contain（保持比例）</option>
+                                        <option value="cover">cover（填满裁剪）</option>
+                                        <option value="stretch">stretch（拉伸变形）</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="config-group">
+                            <div class="config-group-title">🔲 单元格边框</div>
+                            <div class="config-row">
+                                <label><input type="checkbox" id="pdfBorder"> 显示边框</label>
+                                <label>颜色:</label>
+                                <input type="color" id="pdfBorderColor" value="#cccccc">
+                                <label>宽度:</label>
+                                <input type="number" id="pdfBorderWidth" value="1" min="0" max="10" style="width:50px;">
+                            </div>
+                        </div>
+                        <div class="config-group">
+                            <div class="config-group-title">🎨 背景设置</div>
+                            <div class="config-row">
+                                <label>单元格背景:</label>
+                                <input type="color" id="pdfCellBackground" value="#f9f9f9">
+                            </div>
+                            <div class="config-row">
+                                <label>页面背景:</label>
+                                <input type="color" id="pdfBackground" value="#ffffff">
+                            </div>
+                        </div>
+                        <div class="config-group">
+                            <div class="config-group-title">📝 图片信息</div>
+                            <div class="config-row">
+                                <label><input type="checkbox" id="pdfShowHeader" ${showHeader ? 'checked' : ''}> 页眉</label>
+                                <input type="text" id="pdfHeaderText" value="${headerText}" ${showHeader ? '' : 'disabled'} placeholder="页眉文本">
+                            </div>
+                            <div class="config-row">
+                                <label><input type="checkbox" id="pdfShowPageNumber" ${showPageNumber ? 'checked' : ''}> 添加页码</label>
+                            </div>
+                        </div>
+                        <div class="config-group">
+                            <div class="config-group-title">📊 图片列数</div>
+                            <div class="config-row">
+                                <label>列数:</label>
+                                <input type="number" id="pdfCols" value="${cols}" min="1" max="10" style="width:70px;">
+                                <span style="font-size:0.75rem;color:#94a3b8;">(1-10)</span>
+                            </div>
+                        </div>
+                        <div class="config-group">
+                            <div class="config-group-title">💧 水印</div>
+                            <div class="config-row">
+                                <label><input type="checkbox" id="pdfShowWatermark"> 启用水印</label>
+                                <input type="text" id="pdfWatermarkText" value="拍瞬传" disabled placeholder="水印文本">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="button-panel">
+                        <button class="btn-preview" id="btnPreview">预览</button>
+                        <button class="btn-export" id="btnExport">导出PDF</button>
+                        <button class="btn-cancel" id="btnCancel">取消</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        let currentPreviewPage = 0;
+        let zoomLevel = 1;
+
+        overlay.querySelector('#pdfPageSize').addEventListener('change', function() {
+            pageSize = this.value;
+            renderPreview();
+        });
+
+        overlay.querySelector('#pdfMarginTop').addEventListener('input', function() {
+            marginTop = parseFloat(this.value);
+            renderPreview();
+        });
+        overlay.querySelector('#pdfMarginBottom').addEventListener('input', function() {
+            marginBottom = parseFloat(this.value);
+            renderPreview();
+        });
+        overlay.querySelector('#pdfMarginLeft').addEventListener('input', function() {
+            marginLeft = parseFloat(this.value);
+            renderPreview();
+        });
+        overlay.querySelector('#pdfMarginRight').addEventListener('input', function() {
+            marginRight = parseFloat(this.value);
+            renderPreview();
+        });
+
+        overlay.querySelector('#dirPortrait').addEventListener('click', function() {
+            orientation = 'portrait';
+            this.classList.add('active');
+            overlay.querySelector('#dirLandscape').classList.remove('active');
+            renderPreview();
+        });
+        overlay.querySelector('#dirLandscape').addEventListener('click', function() {
+            orientation = 'landscape';
+            this.classList.add('active');
+            overlay.querySelector('#dirPortrait').classList.remove('active');
+            renderPreview();
+        });
+
+        overlay.querySelector('#pdfGap').addEventListener('input', function() {
+            gap = parseInt(this.value);
+            overlay.querySelector('#gapValue').textContent = gap;
+            renderPreview();
+        });
+
+        const headerCheckbox = overlay.querySelector('#pdfShowHeader');
+        const headerInput = overlay.querySelector('#pdfHeaderText');
+        headerCheckbox.addEventListener('change', function() {
+            showHeader = this.checked;
+            headerInput.disabled = !showHeader;
+            renderPreview();
+        });
+        headerInput.addEventListener('input', function() {
+            headerText = this.value;
+            renderPreview();
+        });
+
+        overlay.querySelector('#pdfShowPageNumber').addEventListener('change', function() {
+            showPageNumber = this.checked;
+            renderPreview();
+        });
+
+        overlay.querySelector('#pdfCols').addEventListener('input', function() {
+            cols = parseInt(this.value) || 1;
+            if (cols < 1) cols = 1;
+            if (cols > 10) cols = 10;
+            this.value = cols;
+            renderPreview();
+        });
+
+        overlay.querySelector('#pdfScaleMode').addEventListener('change', function() {
+            scaleMode = this.value;
+            renderPreview();
+        });
+
+        overlay.querySelector('#pdfBorder').addEventListener('change', function() {
+            border = this.checked;
+            renderPreview();
+        });
+
+        overlay.querySelector('#pdfBorderColor').addEventListener('input', function() {
+            borderColor = this.value;
+            renderPreview();
+        });
+
+        overlay.querySelector('#pdfBorderWidth').addEventListener('input', function() {
+            borderWidth = parseInt(this.value) || 1;
+            if (borderWidth < 0) borderWidth = 0;
+            if (borderWidth > 10) borderWidth = 10;
+            this.value = borderWidth;
+            renderPreview();
+        });
+
+        overlay.querySelector('#pdfCellBackground').addEventListener('input', function() {
+            cellBackground = this.value;
+            renderPreview();
+        });
+
+        overlay.querySelector('#pdfBackground').addEventListener('input', function() {
+            background = this.value;
+            renderPreview();
+        });
+
+        const watermarkCheckbox = overlay.querySelector('#pdfShowWatermark');
+        const watermarkInput = overlay.querySelector('#pdfWatermarkText');
+        watermarkCheckbox.addEventListener('change', function() {
+            showWatermark = this.checked;
+            watermarkInput.disabled = !this.checked;
+            renderPreview();
+        });
+        watermarkInput.addEventListener('input', function() {
+            watermarkText = this.value;
+            renderPreview();
+        });
+
+        function getStyleConfig() {
+            return {
+                pageSize: pageSize,
+                orientation: orientation,
+                marginTop: marginTop,
+                marginBottom: marginBottom,
+                marginLeft: marginLeft,
+                marginRight: marginRight,
+                cols: cols,
+                rows: 0,
+                gapX: gap,
+                gapY: gap,
+                alignment: 'center',
+                showPageNumber: showPageNumber,
+                headerText: showHeader ? headerText : '',
+                scaleMode: scaleMode,
+                border: border,
+                borderColor: borderColor,
+                borderWidth: borderWidth,
+                cellBackground: cellBackground,
+                background: background,
+                watermarkText: showWatermark ? watermarkText : ''
+            };
+        }
+
+        function renderPreview() {
+            const style = getStyleConfig();
+            const container = overlay.querySelector('#previewCanvasContainer');
+            const pageInfo = overlay.querySelector('#previewPageInfo');
+            const prevBtn = overlay.querySelector('#previewPrev');
+            const nextBtn = overlay.querySelector('#previewNext');
+
+            let pageW = 595.28, pageH = 841.89;
+            switch (style.pageSize) {
+                case 'A3': pageW = 841.89; pageH = 1190.55; break;
+                case 'Letter': pageW = 612; pageH = 792; break;
+            }
+            if (style.orientation === 'landscape') {
+                [pageW, pageH] = [pageH, pageW];
+            }
+
+            const pageRows = 4;
+            const imagesPerPage = cols * pageRows;
+            const totalPages = Math.ceil(paths.length / imagesPerPage);
+
+            if (totalPages < 1) {
+                container.innerHTML = '<div class="preview-page" style="padding:20px;color:#94a3b8;">暂无图片</div>';
+                return;
+            }
+
+            currentPreviewPage = Math.min(currentPreviewPage, totalPages - 1);
+            pageInfo.textContent = `第 ${currentPreviewPage + 1} 页 / 共 ${totalPages} 页`;
+            prevBtn.disabled = currentPreviewPage === 0;
+            nextBtn.disabled = currentPreviewPage === totalPages - 1;
+
+            const scale = Math.min(400 / pageW, 300 / pageH);
+            const displayW = pageW * scale;
+            const displayH = pageH * scale;
+
+            const marginLeftScaled = marginLeft * scale;
+            const marginRightScaled = marginRight * scale;
+            const marginTopScaled = marginTop * scale;
+            const marginBottomScaled = marginBottom * scale;
+            const gapXScaled = gap * scale;
+            const gapYScaled = gap * scale;
+
+            const availableW = displayW - marginLeftScaled - marginRightScaled;
+            const availableH = displayH - marginTopScaled - marginBottomScaled;
+
+            const cellW = (availableW - (cols - 1) * gapXScaled) / cols;
+            const cellH = (availableH - (pageRows - 1) * gapYScaled) / pageRows;
+
+            const startIdx = currentPreviewPage * imagesPerPage;
+
+            let gridHTML = '';
+            for (let i = 0; i < imagesPerPage; i++) {
+                const imgIdx = startIdx + i;
+                const colIdx = i % cols;
+                const rowIdx = Math.floor(i / cols);
+
+                const x = marginLeftScaled + colIdx * (cellW + gapXScaled);
+                const y = marginTopScaled + rowIdx * (cellH + gapYScaled);
+
+                let cellStyle = `position:absolute;left:${x}px;top:${y}px;width:${cellW}px;height:${cellH}px;`;
+                if (style.cellBackground) {
+                    cellStyle += `background-color:${style.cellBackground};`;
+                }
+                if (style.border) {
+                    cellStyle += `border:${style.borderWidth}px solid ${style.borderColor};`;
+                }
+
+                let cellContent = '';
+                if (imgIdx < paths.length) {
+                    const imgUrl = API_BASE + '/received_images/' + paths[imgIdx];
+                    let imgStyle = 'width:100%;height:100%;';
+                    switch (style.scaleMode) {
+                        case 'cover': imgStyle += 'object-fit:cover;'; break;
+                        case 'stretch': imgStyle += 'object-fit:fill;'; break;
+                        default: imgStyle += 'object-fit:contain;';
+                    }
+                    cellContent = `<img src="${imgUrl}" alt="图片${imgIdx + 1}" loading="lazy" style="${imgStyle}">`;
+                } else {
+                    cellContent = '<div class="preview-grid-cell-placeholder">空</div>';
+                }
+
+                gridHTML += `<div class="preview-grid-cell" style="${cellStyle}">${cellContent}</div>`;
+            }
+
+            let headerHTML = '';
+            if (style.headerText) {
+                headerHTML = `<div class="preview-header-text">${style.headerText}</div>`;
+            }
+
+            let pageNumHTML = '';
+            if (style.showPageNumber) {
+                pageNumHTML = `<div class="preview-page-number">第 ${currentPreviewPage + 1} 页 / 共 ${totalPages} 页</div>`;
+            }
+
+            let watermarkHTML = '';
+            if (style.watermarkText) {
+                const watermarkSize = 14 * scale;
+                const stepX = watermarkSize * 5;
+                const stepY = watermarkSize * 4.5;
+                let watermarkRows = '';
+                for (let y = watermarkSize * 2; y < displayH; y += stepY) {
+                    for (let x = -stepX / 2; x < displayW; x += stepX) {
+                        watermarkRows += `<div style="position:absolute;left:${x}px;top:${y}px;font-size:${watermarkSize}px;color:#f0f0f0;opacity:0.08;transform:rotate(45deg);white-space:nowrap;">${style.watermarkText}</div>`;
+                    }
+                }
+                watermarkHTML = `<div class="preview-watermark" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;">${watermarkRows}</div>`;
+            }
+
+            const pageStyle = `width:${displayW}px;height:${displayH}px;${style.background ? 'background-color:' + style.background + ';' : ''}`;
+
+            container.innerHTML = `
+                <div class="preview-page-wrapper" style="transform:scale(${zoomLevel});transform-origin:center;">
+                    <div class="preview-page" style="${pageStyle}">
+                        ${headerHTML}
+                        ${gridHTML}
+                        ${pageNumHTML}
+                        ${watermarkHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        overlay.querySelector('#previewPrev').onclick = () => {
+            currentPreviewPage--;
+            renderPreview();
+        };
+
+        overlay.querySelector('#previewNext').onclick = () => {
+            currentPreviewPage++;
+            renderPreview();
+        };
+
+        overlay.querySelector('#zoomIn').onclick = () => {
+            if (zoomLevel < 3) {
+                zoomLevel += 0.25;
+                overlay.querySelector('#zoomValue').textContent = `${Math.round(zoomLevel * 100)}%`;
+                renderPreview();
+            }
+        };
+
+        overlay.querySelector('#zoomOut').onclick = () => {
+            if (zoomLevel > 0.25) {
+                zoomLevel -= 0.25;
+                overlay.querySelector('#zoomValue').textContent = `${Math.round(zoomLevel * 100)}%`;
+                renderPreview();
+            }
+        };
+
+        overlay.querySelector('#pdfStyleClose').onclick = () => overlay.remove();
+        overlay.querySelector('#btnCancel').onclick = () => overlay.remove();
+        overlay.querySelector('#btnPreview').onclick = renderPreview;
+        overlay.querySelector('#btnExport').onclick = () => {
+            const style = getStyleConfig();
+            overlay.remove();
+            exportPdfWithStyle(paths, style);
+        };
+
+        overlay.onclick = (e) => {
+            if (e.target === overlay) overlay.remove();
+        };
+
+        setTimeout(renderPreview, 100);
+    }
 
     initAPI();
 </script>
